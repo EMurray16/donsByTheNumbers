@@ -1,0 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Open Sans', sans-serif;
+}
+
+.navbar {
+         background-color: #2b4690 ; 
+         font-weight: bold;
+} 
+
+.navbar-nav > .active > a {
+    background-color: #fff200 !important;
+    font-weight: bold;
+    color: #000000 !important
+}
+
+.navbar-nav :hover {
+	background-color: #fff200 !important;
+    font-weight: bold;
+    color: #000000 !important
+}
