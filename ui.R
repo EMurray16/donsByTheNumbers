@@ -48,8 +48,9 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 p("The last time the FiveThirtyEight data was updated is:"),
 						 textOutput("fteTimestamp"),
 						 br(),
-						 p("In general, FiveThirtyEight updates about an hour after league games, which generally end around 12 PM on Saturdays
-						 	and 5 PM on Tuesdays. Expected goal models generally lag by 2-3 days and are updated manually."),
+						 p("In general, FiveThirtyEight updates about an hour after league games, which generally end around 5 PM UTC (12 PM EST) 
+								on Saturdays and 10 PM UTC (5 PM EST) on weekdays. Expected goal models generally lag by 2-3 days and are updated 
+						 		manually."),
 						 p("Are you sure you want to update the FiveThirtyEight data? Please be considerate of their bandwidth."),
 						 actionButton("updateFTE", label="Update FiveThirtyEight Data")
 		),
@@ -62,7 +63,8 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 p(' - I would like to add "game cards" for each game, with a breakdown of the statistics for past games, and the forecasts
 						 	for future games'),
 						 p(" - Eventually I may have the plots scale more elegantly with the size of the screen (may be too lazy to implement this 
-						 	one)")
+						 	one)"),
+						 p(" - I would like to make some plots comparing how Wimbledon performs in xG relative to FiveThirtyEight's projected goals.")
 	  ),
 		
 		theme=shinytheme("yeti"), 
