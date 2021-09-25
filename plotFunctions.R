@@ -196,37 +196,51 @@ makeBasicStatPlots <- function(mergeTable) {
 }
 
 makeGameTables <- function(mergeTable) {
-	upcomingGames = mergeTable[hasHappened == FALSE,c("date","opponent","opponentSPI","home","pgFor","pgOpp","winProb","lossProb","tieProb")]
-	pastGames = mergeTable[hasHappened == TRUE,c("date","opponent","opponentSPI","home","gFor","gOpp","winProb","lossProb","tieProb")]
+	upcomingGames = mergeTable[hasHappened == FALSE,
+														 c("date","opponent","Location","opponentSPI","pgFor","pgOpp","winProb","lossProb","tieProb")]
 	
-	setnames(upcomingGames, old=c("date","opponent","opponentSPI","home","winProb","lossProb","tieProb","pgFor","pgOpp"),
-					 new=c("Date","Opponent","SPI","Location","% Win","% Loss","% Tie","Goals For","Goals Against"))
-	setnames(pastGames, old=c("date","opponent","opponentSPI","home","winProb","lossProb","tieProb","gFor","gOpp"),
-					 new=c("Date","Opponent","SPI","Location","% Win","% Loss","% Tie","Goals For","Goals Against"))
+	upcomingGames$winProb = cell_spec(upcomingGames$winProb, background=rgb(0,0.6,0.5,alpha=upcomingGames$winProb))
+	upcomingGames$lossProb = cell_spec(upcomingGames$lossProb, background=rgb(0.8,0.4,0,alpha=upcomingGames$lossProb))
+	upcomingGames$tieProb = cell_spec(upcomingGames$tieProb, background=rgb(0.4,0.4,0.4,alpha=upcomingGames$tieProb))
 	
-	upcomingGames$Location = as.character(upcomingGames$Location)
-	pastGames$Location = as.character(pastGames$Location)
-	upcomingGames[Location == "TRUE","Location"] = "Plough Lane"
-	pastGames[Location == "TRUE","Location"] = "Plough Lane"
-	upcomingGames[Location == "FALSE","Location"] = "Away"
-	pastGames[Location == "FALSE","Location"] = "Away"
+	pastGames = mergeTable[hasHappened == TRUE,
+												 c("date","opponent","Location","gFor","gOpp",
+												 	"winProb","lossProb","tieProb",
+												 	"xgWin","xgLoss","xgTie",
+												 	"adjXGWin","adjXGLoss","adjXGTie")]
 	
 	
-	upcomingGames$`% Win` = cell_spec(upcomingGames$`% Win`, background=rgb(0,0.6,0.5,alpha=upcomingGames$`% Win`))
-	upcomingGames$`% Loss` = cell_spec(upcomingGames$`% Loss`, background=rgb(0.8,0.4,0,alpha=upcomingGames$`% Loss`))
-	upcomingGames$`% Tie` = cell_spec(upcomingGames$`% Tie`, background=rgb(0.5,0.5,0.5,alpha=upcomingGames$`% Tie`))
+	pastGames$winProb = cell_spec(pastGames$winProb, background=rgb(0,0.6,0.5,alpha=pastGames$winProb), 
+																bold=pastGames$gFor > pastGames$gOpp)
+	pastGames$lossProb = cell_spec(pastGames$lossProb, background=rgb(0.8,0.4,0,alpha=pastGames$lossProb), 
+																 bold=pastGames$gFor < pastGames$gOpp)
+	pastGames$tieProb = cell_spec(pastGames$tieProb, background=rgb(0.4,0.4,0.4,alpha=pastGames$tieProb), 
+																bold=pastGames$gFor == pastGames$gOpp)
 	
-	k1 = kable(upcomingGames, escape=FALSE) %>%
-		kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), fixed_thead=TRUE)
+	pastGames$xgWin = cell_spec(pastGames$xgWin, background=rgb(0,0.6,0.5,alpha=pastGames$xgWin), 
+															bold=pastGames$gFor > pastGames$gOpp)
+	pastGames$xgLoss = cell_spec(pastGames$xgLoss, background=rgb(0.8,0.4,0,alpha=pastGames$xgLoss), 
+															 bold=pastGames$gFor < pastGames$gOpp)
+	pastGames$xgTie = cell_spec(pastGames$xgTie, background=rgb(0.4,0.4,0.4,alpha=pastGames$xgTie), 
+															bold=pastGames$gFor == pastGames$gOpp)
 	
-	pastGames$`% Win` = cell_spec(pastGames$`% Win`, background=rgb(0,0.6,0.5,alpha=pastGames$`% Win`), 
-																bold=pastGames$`Goals For` > pastGames$`Goals Against`)
-	pastGames$`% Loss` = cell_spec(pastGames$`% Loss`, background=rgb(0.8,0.4,0,alpha=pastGames$`% Loss`), 
-																 bold=pastGames$`Goals For` < pastGames$`Goals Against`)
-	pastGames$`% Tie` = cell_spec(pastGames$`% Tie`, background=rgb(0.5,0.5,0.5,alpha=pastGames$`% Tie`), 
-																bold=pastGames$`Goals For` == pastGames$`Goals Against`)
-	k2 = kable(pastGames, escape=F) %>%
-		kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), fixed_thead=TRUE)
+	pastGames$adjXGWin = cell_spec(pastGames$adjXGWin, background=rgb(0,0.6,0.5,alpha=pastGames$adjXGWin), 
+																 bold=pastGames$gFor > pastGames$gOpp)
+	pastGames$adjXGLoss = cell_spec(pastGames$adjXGLoss, background=rgb(0.8,0.4,0,alpha=pastGames$adjXGLoss), 
+																	bold=pastGames$gFor < pastGames$gOpp)
+	pastGames$adjXGTie = cell_spec(pastGames$adjXGTie, background=rgb(0.4,0.4,0.4,alpha=pastGames$adjXGTie), 
+																 bold=pastGames$gFor == pastGames$gOpp)
+	
+	k1 = kable(upcomingGames, escape=F,
+						 col.names=c("Date","Opponent","Location","Opponent SPI","Avg Goals For","Avg Goals Against","% Win","% Loss","% Tie")) %>%
+		kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), fixed_thead=TRUE) %>%
+		add_header_above(c("Game Info"=3, "FiveThirtyEight Projection"=6))
+	
+	k2 = kable(pastGames, escape=F, 
+						 col.names=c("Date","Opponent","Location","For","Against",rep(c("% Win","% Loss","% Tie"), 3))) %>%
+		kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), fixed_thead=TRUE) %>%
+		add_header_above(c("Game Info"=3, "Goals"=2,"FiveThirtyEight Projection"=3,"xG Models"=3,"Score Adjusted xG Model"=3)) %>%
+		column_spec(c(3,5,8,11), border_right=TRUE)
 	
 	return(list(k1,k2))
 }

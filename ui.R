@@ -71,6 +71,7 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 		useShinyjs(),
 		tags$head(
 			tags$link(rel = "stylesheet", type = "text/css", href = "wimbledonTheme.css"),
-			tags$link(rel="shortcut icon", href="favicon.png")
+			tags$link(rel="shortcut icon", href="favicon.png"),
+			tags$script(src="fixingExpandedHeader.js")
 		)
 ))

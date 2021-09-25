@@ -43,6 +43,39 @@ UpdateFiveThirtyEight <- function(tableFilename, timestampFilename) {
 	return(table538)
 }
 
+xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
+	if (length(wimbledonXG) != length(opponentXG)) {
+		stop("length of expected goal vectors does not match")
+	}
+	
+	gVec = 0:9
+	
+	outVec = vector(mode="double", length=length(wimbledonXG))
+	for (i in 1:length(outVec)) {
+		dons = wimbledonXG[i]
+		opp = opponentXG[i]
+		
+		# Calculate odds for the first xg model
+		goalDistW = dons^gVec / factorial(gVec) * exp(-dons)
+		goalDistO = opp^gVec / factorial(gVec) * exp(-opp)
+		
+		goalMat = goalDistW %*% t(goalDistO)
+		diag(goalMat) = diag(goalMat) * 1.1
+		matTot = sum(goalMat)
+		
+		if (mode == "win") {
+			outVec[i] = round(sum(goalMat[lower.tri(goalMat, diag=FALSE)]) / matTot, 4)
+		} else if (mode == "loss") {
+			outVec[i] = round(sum(goalMat[upper.tri(goalMat, diag=FALSE)]) / matTot, 4)
+		} else {
+			outVec[i] = round(sum(diag(goalMat)) / matTot, 4)
+		}
+	}
+	
+	return(outVec)
+	#return(c(oddsWin, oddsTie, oddsLoss))
+}
+
 MergeTables <- function(table538, xgTable) {
 	table538$date = as.character(table538$date)
 	xgTable$date = as.character(xgTable$date)
@@ -79,6 +112,40 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,cumShotShare := cumsum(shotShare) / seq_along(shotShare)]
 	mergeTable[,cumGDAE_footystats := cumsum(gdae_footystats)]
 	mergeTable[,cumGDAE_footballxg := cumsum(gdae_footballxg)]
+	
+	# Add a string for the game location
+	mergeTable$Location = as.character(mergeTable$home)
+	mergeTable[Location == "TRUE","Location"] = "Plough Lane"
+	mergeTable[Location == "FALSE","Location"] = "Away"
+	mergeTable[,home := NULL]
+	
+	# "deserved xg"
+	mergeTable[,adjXGFor := 0.5 * (xgFor_footystats * 90 / (90 + timeTrailingSecondHalf) + xgFor_footballxg * 90/(90+timeTrailingSecondHalf))]
+	mergeTable[,adjXGOpp := 0.5 * (xgOpp_footystats * 90 / (90 + timeLeadingSecondHalf) + xgOpp_footballxg * 90/(90+timeLeadingSecondHalf))]
+	
+	# xg win probabilities
+	mergeTable[hasHappened == TRUE,xgW_footballxg := xgOdds(xgFor_footballxg, xgOpp_footballxg, "win")]
+	mergeTable[hasHappened == TRUE,xgL_footballxg := xgOdds(xgFor_footballxg, xgOpp_footballxg, "loss")]
+	mergeTable[hasHappened == TRUE,xgT_footballxg := xgOdds(xgFor_footballxg, xgOpp_footballxg, "tie")]
+	
+	mergeTable[hasHappened == TRUE,xgW_footystats := xgOdds(xgFor_footystats, xgOpp_footystats, "win")]
+	mergeTable[hasHappened == TRUE,xgL_footystats := xgOdds(xgFor_footystats, xgOpp_footystats, "loss")]
+	mergeTable[hasHappened == TRUE,xgT_footystats := xgOdds(xgFor_footystats, xgOpp_footystats, "tie")]
+	
+	mergeTable[hasHappened == TRUE,adjXGWin := xgOdds(adjXGFor, adjXGOpp, "win")]
+	mergeTable[hasHappened == TRUE,adjXGLoss := xgOdds(adjXGFor, adjXGOpp, "loss")]
+	mergeTable[hasHappened == TRUE,adjXGTie := xgOdds(adjXGFor, adjXGOpp, "tie")]
+	
+	
+	mergeTable[hasHappened == TRUE, xgWin := 0.5 * (xgW_footballxg + xgW_footystats)]
+	mergeTable[hasHappened == TRUE, xgLoss := 0.5 * (xgL_footballxg + xgL_footystats)]
+	mergeTable[hasHappened == TRUE, xgTie := 0.5 * (xgT_footballxg + xgT_footystats)]
+	mergeTable[,c("xgW_footballxg","xgL_footballxg","xgT_footballxg","xgW_footystats","xgL_footystats","xgT_footystats") := NULL]
+	
+	mergeTable[,xgPoints := xgWin * 3 + xgTie]
+	mergeTable[,cumXGPoints := cumsum(xgPoints)]
+	mergeTable[,adjXGPoints := adjXGWin * 3 + adjXGTie]
+	mergeTable[,adjCumXGPoints := cumsum(adjXGPoints)]
 	
 	return(mergeTable)
 }
