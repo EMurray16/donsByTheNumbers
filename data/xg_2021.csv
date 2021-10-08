@@ -1,5 +1,5 @@
 date,opponent,xgFor_footballxg,xgOpp_footballxg,xgFor_footystats,xgOpp_footystats,possessionFor,shotShare,timeTrailingSecondHalf,timeLeadingSecondHalf
-2021-08-07,Doncaster Rovers,1,0.4,1.04,1.02,42,0.4,12,16
+2021-08-07,Doncaster Rovers,1,0.4,1.04,1.02,42,40,12,16
 2021-08-14,Bolton,2.2,3,1.81,1.18,54,62.5,30,0
 2021-08-17,Gillingham,1.5,0.3,2.03,1.03,66,70.8,0,12
 2021-08-21,Sunderland,0.2,0.5,0.95,1.65,47,31.6,26,0
@@ -9,8 +9,7 @@ date,opponent,xgFor_footballxg,xgOpp_footballxg,xgFor_footystats,xgOpp_footystat
 2021-09-18,Plymouth Argyle,1.2,1.9,1.76,1.11,60,56.5,45,0
 2021-09-25,Shrewsbury Town,1,1.5,1.36,1.55,63,48,25,0
 2021-09-28,Rotherham United,0.1,0.9,0.65,1.96,55,28.6,45,0
-2021-10-02,Burton Albion,,,,,,,,
-2021-10-09,Milton Keynes Dons,,,,,,,,
+2021-10-02,Burton Albion,0.9,0.9,1.49,1.09,59,62.5,24,0
 2021-10-16,Sheffield Wednesday,,,,,,,,
 2021-10-19,Lincoln City,,,,,,,,
 2021-10-23,Wigan,,,,,,,,
@@ -26,6 +25,7 @@ date,opponent,xgFor_footballxg,xgOpp_footballxg,xgFor_footystats,xgOpp_footystat
 2021-12-29,Oxford United,,,,,,,,
 2022-01-01,Plymouth Argyle,,,,,,,,
 2022-01-08,Ipswich Town,,,,,,,,
+2022-01-11,Milton Keynes Dons,,,,,,,,
 2022-01-15,Morecambe,,,,,,,,
 2022-01-22,Burton Albion,,,,,,,,
 2022-01-29,Shrewsbury Town,,,,,,,,

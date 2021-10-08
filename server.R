@@ -29,24 +29,17 @@ server <- function(input, output, session) {
 			withProgress(value=1, message="Getting and parsing FiveThirtyEight data...",
 									 expr = {
 									 	# step 1: get the new data
-									 	table538 = UpdateFiveThirtyEight(Rdata538, RdataTimestamp)
+									 	table538 <<- UpdateFiveThirtyEight(Rdata538, RdataTimestamp)
 									 	
-									 	# step 2: merge the data and build the plots
-									 	mergeTable = MergeTables(table538, xgTable)
-									 	
-									 	# step 3: remake the plots
-									 	plots538 = make538Plots(mergeTable)
-									 	plotsXG = makeXGPlots(mergeTable)
-									 	plotsBasic = makeBasicStatPlots(mergeTable)
-									 	load(RdataTimestamp)
-									 	tablesGame = makeGameTables(mergeTable)
-									 	
-									 	# This "super-assign" updates a global variable from our scoped observer
-									 	fteUpdateTimestamp <<- fteUpdateTimestamp
-									 	
-									 	# step 3: rerender the plots
-									 	renderOutputPlots()
+									 	session$reload()
 									 }
 			)
+	})
+	
+	observe({
+		pastGameRow = mergeTable[gameDesc == input$gameToDisplay,]
+		gameDisplays = makeGameReport(pastGameRow)
+		output$gameCard = renderPlot(gameDisplays[[1]])
+		output$gameCardInfoTable = renderUI(HTML(gameDisplays[[2]]))
 	})
 }

@@ -117,6 +117,7 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable$Location = as.character(mergeTable$home)
 	mergeTable[Location == "TRUE","Location"] = "Plough Lane"
 	mergeTable[Location == "FALSE","Location"] = "Away"
+	mergeTable[,gameDesc := paste(date, ifelse(home, "vs", "@"), opponent)]
 	mergeTable[,home := NULL]
 	
 	# "deserved xg"

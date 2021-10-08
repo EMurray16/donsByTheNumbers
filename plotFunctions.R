@@ -4,6 +4,7 @@ library(ggtext)
 library(data.table)
 library(knitr)
 library(kableExtra)
+library(patchwork)
 
 baseTheme = function() {
 	baseSize = 14
@@ -19,7 +20,7 @@ baseTheme = function() {
 
 masterColorList = function() {
 	return(
-		c("fivethirtyeight"="#ed713a", "Wimbledon"="#0000ff", # 538 points plot
+		c("FiveThirtyEight"="#ed713a", "Wimbledon"="#0000ff", # 538 points plot
 			"Goals For" = rgb(0,0.45,0.7), "Goals Against" = rgb(0.8,0.4,0), "Net Goal Difference" = "#fff200", # goals plots
 			"xG For" = rgb(0.35,0.7,0.9), "xG Against" = rgb(0.9,0.6,0), #xG and goals plots
 			"Cumulative"=rgb(0.9,0.8,1), # gdae plots
@@ -32,22 +33,34 @@ masterColorList = function() {
 		))
 }
 
+gameCardTheme <- function() {
+	baseSize = 12
+	baseTextElem = element_text(size=baseSize)
+	
+	return(
+		theme_bw() + theme(legend.position="none") +
+			theme(plot.caption=element_markdown(size=baseSize), plot.subtitle = element_markdown(size=baseSize)) +
+			theme(axis.text=baseTextElem, legend.text=baseTextElem, strip.text=baseTextElem) +
+			theme(plot.title=element_text(size=baseSize+2))
+	)
+}
+
 make538Plots <- function(mergeTable) {
 	# start by plotting points vs projected points
 	runningAhead = round(mergeTable$adjProjPoints[nrow(mergeTable)] - mergeTable$cumProjPoints[nrow(mergeTable)], 2)
 	if (runningAhead > 0.25) {
-		pointsCaption = paste("The Dons are currently running **", runningAhead, " points ahead** of fivethirtyeight's projection.",sep="")
+		pointsCaption = paste("The Dons are currently running **", runningAhead, " points ahead** of FiveThirtyEight's projection.",sep="")
 	} else if (runningAhead < 0.25) {
-		pointsCaption = paste("The Dons are currently running **", -runningAhead, " points behind** fivethirtyeight's projection.", sep="")
+		pointsCaption = paste("The Dons are currently running **", -runningAhead, " points behind** FiveThirtyEight's projection.", sep="")
 	} else {
-		pointsCaption = paste("The Dons are *on pace* with fivethirtyeight's projections.")
+		pointsCaption = paste("The Dons are *on pace* with FiveThirtyEight's projections.")
 	}
 	
 	g1 = ggplot(mergeTable) + baseTheme() +
-		geom_line(aes(x=date, y=cumProjPoints, color="fivethirtyeight"), size=1) +
+		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
 		geom_line(aes(x=date, y=adjProjPoints), color="grey", size=0.5) +
 		geom_line(data=mergeTable[hasHappened == TRUE,], aes(x=date, y=cumPoints, color="Wimbledon"), size=1) +
-		ggtitle("Point accumulation versus fivethirtyeight projections") +
+		ggtitle("Point accumulation versus FiveThirtyEight projections") +
 		labs(x=NULL, y="Points", caption=pointsCaption) + 
 		ylim(0, 100) +
 		geom_hline(yintercept=75, color=rgb(0,0.75,0.5), linetype="dashed") +
@@ -69,13 +82,13 @@ make538Plots <- function(mergeTable) {
 		geom_line(aes(x=date, y=wimbledonSPI), color="#0000ff") +
 		geom_hline(yintercept=35, color=rgb(0,0.75,0.5), linetype="dashed") +
 		geom_hline(yintercept=15.75, color=rgb(1, 0.1, 0), linetype="dashed") +
-		labs(x=NULL, y="fivethirtyeight SPI", caption=spiCaption) + 
+		labs(x=NULL, y="FiveThirtyEight SPI", caption=spiCaption) + 
 		ylim(0,50) + xlim(as.Date("2021-08-01"), as.Date("2022-05-01")) +
 		ggtitle("Wimbledon's Soccer Power Index through the season")
 	
 	g3 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
 		geom_bar(aes(x=date, y=importance), fill="black", stat="identity") +
-		labs(x=NULL, y="Importance") + ggtitle("Importance of each game")
+		labs(x=NULL, y="Importance") + ggtitle("FiveThirtyEight Importance of each game")
 	
 	return(list(g1, g2, g3))
 }
@@ -190,7 +203,7 @@ makeBasicStatPlots <- function(mergeTable) {
 		labs(x=NULL, y="Goals") + 
 		scale_fill_manual(values=masterColorList()) + scale_color_manual(values=masterColorList()) +
 		ggtitle("Goal Difference") +
-		scale_y_continuous(breaks=seq(-6,6,2), labels=c(6,4,2,0,2,4,6), limits=c(-5,5))
+		scale_y_continuous(breaks=seq(-6,6,2), limits=c(-5,5))
 	
 	return(list(g1,g2,g3))
 }
@@ -243,5 +256,110 @@ makeGameTables <- function(mergeTable) {
 		add_header_above(c("Game Info"=3, "Goals"=2,"FiveThirtyEight Projection"=3,"xG Models"=3,"Score Adjusted xG Model"=3)) %>%
 		column_spec(c(3,5,8,11), border_right=TRUE)
 	
-	return(list(k1,k2))
+	g1 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
+		geom_line(aes(x=date, y=cumXGPoints, color="Average xG"), size=1) +
+		geom_line(aes(x=date, y=adjCumXGPoints, color="Score-Adjusted xG"), size=1) +
+		geom_line(aes(x=date, y=cumPoints, color="Wimbledon"), size=1) +
+		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
+		ggtitle("Point accumulation versus xG Models") +
+		labs(x=NULL, y="Points") + 
+		scale_color_manual(values=masterColorList())
+	
+	return(list(k1,k2,g1))
+}
+
+makeGameReport <- function(pastGameRow) {
+	totalGoals = pastGameRow$gFor + pastGameRow$gOpp
+	pastGameRow[,xgShare_footystats := round(xgFor_footystats / (xgFor_footystats+xgOpp_footystats) * 100, 2)]
+	pastGameRow[,xgShare_footballxg := round(xgFor_footballxg / (xgFor_footballxg+xgOpp_footballxg) * 100, 2)]
+	pastGameRow[,gShare := ifelse(totalGoals == 0, 50, round(gFor / totalGoals * 100, 2))]
+	
+	gMax = max(c(3, ceiling(pastGameRow$xgFor_footballxg), ceiling(pastGameRow$xgFor_footystats),
+							 ceiling(pastGameRow$xgOpp_footballxg), ceiling(pastGameRow$xgOpp_footystats),
+							 pastGameRow$gFor, pastGameRow$gOpp))
+	
+	percentPlot = ggplot(pastGameRow) + 	gameCardTheme() + coord_flip() +
+		geom_bar(aes(x="Possession", y=possessionFor, fill=Location), stat="identity") +
+		geom_bar(aes(x="Possession", y=-100+possessionFor, fill="Opponent"), stat="identity") + 
+		geom_bar(aes(x="Shot Share", y=shotShare, fill=Location), stat="identity") + 
+		geom_bar(aes(x="Shot Share", y=-100+shotShare, fill="Opponent"), stat="identity") + 
+		geom_bar(aes(x="footystats xG Share", y=xgShare_footystats, fill=Location), stat="identity") +
+		geom_bar(aes(x="footystats xG Share", y=-100+xgShare_footystats, fill="Opponent"), stat="identity") +
+		geom_bar(aes(x="footballxg xG Share", y=xgShare_footballxg, fill=Location), stat="identity") +
+		geom_bar(aes(x="footballxg xG Share", y=-100+xgShare_footballxg, fill="Opponent"), stat="identity") +
+		geom_bar(aes(x="Goal Share", y=gShare, fill=Location), stat="identity") +
+		geom_bar(aes(x="Goal Share", y=-100+gShare, fill="Opponent"), stat="identity") +
+		labs(x=NULL, y="Percentage") + ggtitle("Percentage Stats") + 
+		scale_y_continuous(breaks=seq(-100,100,20), labels=c(seq(100,0,-20), seq(20,100,20)), limits=c(-100,100)) +
+		scale_fill_manual(values = masterColorList())+
+		geom_hline(yintercept=-50) + geom_hline(yintercept=50) +
+		scale_x_discrete(limits=c("Goal Share","footystats xG Share","footballxg xG Share","Shot Share","Possession"))
+	
+	gTable = data.table(Stat = c(rep("Actual Goals",2), rep("xG footystats", 2),rep("xG footballxg",2),rep("FiveThirtyEight Projection", 2)),
+											Club = rep(c(pastGameRow$Location,"Opponent"), 4),
+											Count = c(pastGameRow$gFor, pastGameRow$gOpp, 
+																pastGameRow$xgFor_footystats, pastGameRow$xgOpp_footystats,
+																pastGameRow$xgOpp_footballxg, pastGameRow$xgOpp_footballxg,
+																pastGameRow$pgFor, pastGameRow$pgOpp)
+	)
+	maxGoals = max(c(gTable$Count, 4))
+	
+	goals = ggplot(gTable) + 
+		geom_bar(aes(x=Stat, y=Count, fill=Club), position = "dodge", stat="identity") +
+		labs(x=NULL, y=NULL) + ggtitle("Goal Stats") + gameCardTheme() + coord_flip() +
+		scale_fill_manual(values=masterColorList()) +
+		ylim(0, maxGoals) +
+		scale_x_discrete(limits=c("Actual Goals", "xG footystats", "xG footballxg", "FiveThirtyEight Projection"))
+	
+	winPlot = ggplot(pastGameRow) +
+		geom_bar(aes(x="FiveThirtyEight", y=lossProb + tieProb + winProb, fill="Win"), stat="identity") +
+		geom_bar(aes(x="FiveThirtyEight", y=lossProb + tieProb, fill="Tie"), stat="identity") +
+		geom_bar(aes(x="FiveThirtyEight", y=lossProb, fill="Loss"), stat="identity") +
+		geom_bar(aes(x="Avg xG Model", y=xgLoss + xgTie + xgWin, fill="Win"), stat="identity") +
+		geom_bar(aes(x="Avg xG Model", y=xgLoss + xgTie, fill="Tie"), stat="identity") +
+		geom_bar(aes(x="Avg xG Model", y=xgLoss, fill="Loss"), stat="identity") +
+		geom_bar(aes(x="Score-Adjusted xG", y=adjXGLoss + adjXGTie + adjXGWin, fill="Win"), stat="identity") +
+		geom_bar(aes(x="Score-Adjusted xG", y=adjXGLoss + adjXGTie, fill="Tie"), stat="identity") +
+		geom_bar(aes(x="Score-Adjusted xG", y=adjXGLoss, fill="Loss"), stat="identity") +
+		gameCardTheme() + coord_flip() + labs(x=NULL, y="Chance of Victory") +
+		ggtitle("Modeled Outcome Probabilities") +
+		scale_fill_manual(values=masterColorList()) +
+		geom_hline(yintercept=0.5) +
+		scale_y_continuous(breaks=c(seq(0,0.4,0.2), 0.5, seq(0.6,1,0.2)), labels=c(seq(0,40,20), '50%', seq(40,0,-20)), limits=c(0,1)) +
+		scale_x_discrete(limits=c("Score-Adjusted xG", "Avg xG Model", "FiveThirtyEight")) +
+		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss") +
+		annotate("text", y=0.95, x="FiveThirtyEight", label="Win")
+	
+	spiPlotTable = data.table(Club=c(pastGameRow$Location,pastGameRow$opponent), 
+														SPI=c(pastGameRow$wimbledonSPI, pastGameRow$opponentSPI),
+														Fill=c(pastGameRow$Location, "Opponent"))
+	spiUpperLim = max(c(35, spiPlotTable$SPI))
+	
+	spi = ggplot(spiPlotTable, aes(x=Club, y=SPI, fill=Fill)) +
+		geom_bar(stat="identity") +
+		gameCardTheme() + coord_flip() + labs(x=NULL, y=NULL) + 
+		ggtitle("Soccer Power Index") + ylim(0,spiUpperLim) +
+		scale_fill_manual(values=masterColorList()) +
+		theme(axis.text.y=element_blank())
+	
+	finalPlot = spi / percentPlot / goals / winPlot + 
+		plot_annotation(paste("Game Report:", pastGameRow$gameDesc), 
+										theme=theme(plot.title=element_text(size=20, hjust=0.5, face="bold"))) +
+		plot_layout(heights=c(2,5,5,3))
+		
+	
+	if (pastGameRow$Location == "Away") {
+		basicTable = data.table(Team = c(pastGameRow$opponent,"AFC Wimbledon"), Score = c(pastGameRow$gOpp, pastGameRow$gFor))
+		basicTable$Colour = cell_spec("Space", 
+																	background=ifelse(basicTable$Team=="AFC Wimbledon", "#fff200", rgb(0.5,0.5,0.5)),
+																	color=ifelse(basicTable$Team=="AFC Wimbledon", "#fff200", rgb(0.5,0.5,0.5)))
+	} else {
+		basicTable = data.table(Team = c("AFC Wimbledon",pastGameRow$opponent), Score = c(pastGameRow$gFor, pastGameRow$gOpp))
+		basicTable$Colour = cell_spec("Space", 
+																	background=ifelse(basicTable$Team=="AFC Wimbledon", "#0000ff", rgb(0.5,0.5,0.5)),
+																	color=ifelse(basicTable$Team=="AFC Wimbledon", "#0000ff", rgb(0.5,0.5,0.5)))
+	}
+	
+	gameKable = kable(basicTable, escape=FALSE) %>% kable_styling(bootstrap_options ="condensed", full_width = FALSE)
+	return(list(finalPlot,gameKable))
 }
