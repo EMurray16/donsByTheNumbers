@@ -8,10 +8,12 @@ server <- function(input, output, session) {
 		output$plot538_1 = renderPlot(plots538[[1]])
 		output$plot538_2 = renderPlot(plots538[[2]])
 		output$plot538_3 = renderPlot(plots538[[3]])
+		output$plot538_4 = renderPlot(plots538[[4]])
 		
 		output$plotXG_1 = renderPlot(plotsXG[[1]])
 		output$plotXG_2 = renderPlot(plotsXG[[2]])
 		output$plotXG_3 = renderPlot(plotsXG[[3]])
+		output$plotXG_4 = renderPlot(plotsXG[[4]])
 		
 		output$plotBasic_1 = renderPlot(plotsBasic[[1]])
 		output$plotBasic_2 = renderPlot(plotsBasic[[2]])

@@ -28,8 +28,9 @@ masterColorList = function() {
 			"Possession" = rgb(0.35,0.6,0.5), "Shot Share" = rgb(0.35,0.7,0.9), 
 			"Avg Possession" = "darkgreen", "Avg Shot Share" = rgb(0,0.45,0.7),
 			"Loss" = rgb(0.8,0.4,0), "Win" = rgb(0,0.6,0.5), "Tie" = rgb(0.5,0.5,0.5), # game card outcome probabilities
-			"Plough Lane" = "#0000ff", "Away" = "#fff200", "Opponent" = rgb(0.5,0.5,0.5)
-			
+			"Plough Lane" = "#0000ff", "Away" = "#fff200", "Opponent" = rgb(0.5,0.5,0.5),
+			"Promotion Playoffs" = rgb(0,0.75,0.5), "Relegation" = rgb(1, 0.1, 0),
+			"Average xG" = rgb(0.35,0.7,0.9), "Score-Adjusted xG" = rgb(0,0.6,0.5)
 		))
 }
 
@@ -86,11 +87,19 @@ make538Plots <- function(mergeTable) {
 		ylim(0,50) + xlim(as.Date("2021-08-01"), as.Date("2022-05-01")) +
 		ggtitle("Wimbledon's Soccer Power Index through the season")
 	
-	g3 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
+	g3 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date)) + baseTheme() +
+		geom_line(aes(y=relegationOdds, color="Relegation")) +
+		geom_line(aes(y=promotionPlayoffOdds, color="Promotion Playoffs")) +
+		ggtitle("FiveThirtyEight's Relegation and Promotion Playoff Odds") +
+		labs(x=NULL, y="Percent Chance") + ylim(0, 100) +
+		scale_color_manual(values = masterColorList()) + 
+		xlim(as.Date("2021-08-01"), as.Date("2022-05-01"))
+	
+	g4 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
 		geom_bar(aes(x=date, y=importance), fill="black", stat="identity") +
 		labs(x=NULL, y="Importance") + ggtitle("FiveThirtyEight Importance of each game")
 	
-	return(list(g1, g2, g3))
+	return(list(g1, g2, g3, g4))
 }
 
 makeXGPlots <- function(mergeTable) {
@@ -159,9 +168,21 @@ makeXGPlots <- function(mergeTable) {
 		labs(x=NULL, y="Luck") +
 		scale_color_manual(values=masterColorList()) +
 		facet_grid(~Model) +
-		ggtitle("RAGE", subtitle="**R**atio of **A**ctual **G**oals to **E**xpected")
+		ggtitle("Cumulative RAGE", subtitle="**R**atio of **A**ctual **G**oals to **E**xpected")
 	
-	return(list(g1,g2,g3))
+	pastGameTable = mergeTable[hasHappened == TRUE,]
+	pointMax = max(c(pastGameTable$cumXGPoints, pastGameTable$adjCumXGPoints, pastGameTable$cumPoints, pastGameTable$cumProjPoints))
+	g4 = ggplot(pastGameTable, aes(x=date)) + baseTheme() +
+		geom_line(aes(y=cumXGPoints, color="Average xG"), size=1) +
+		geom_line(aes(y=adjCumXGPoints, color="Score-Adjusted xG"), size=1) +
+		geom_line(aes(y=cumPoints, color="Wimbledon"), size=1.5) +
+		geom_point(aes(y=cumPoints, color="Wimbledon"), size=2.5) +
+		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
+		ggtitle("Point accumulation versus xG Models") +
+		labs(x=NULL, y="Points") + ylim(0, pointMax + 3) +
+		scale_color_manual(values=masterColorList())
+
+	return(list(g1,g2,g3,g4))
 }
 
 makeBasicStatPlots <- function(mergeTable) {

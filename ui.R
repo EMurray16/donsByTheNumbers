@@ -45,7 +45,9 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 ),
 						 mainPanel(
 						 	plotOutput("plot538_1"),
-						 	plotOutput("plot538_2")
+						 	plotOutput("plot538_2"),
+						 	plotOutput("plot538_3"),
+						 	plotOutput("plot538_4")
 						 )
 	  ),
 		
@@ -56,7 +58,8 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 mainPanel(width=12,
 						 		plotOutput("plotXG_1"),
 						 		plotOutput("plotXG_2"),
-						 		plotOutput("plotXG_3")
+						 		plotOutput("plotXG_3"),
+						 		plotOutput("plotXG_4")
 						 )
 	  ),
 		
