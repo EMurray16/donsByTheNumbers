@@ -76,6 +76,30 @@ xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
 	#return(c(oddsWin, oddsTie, oddsLoss))
 }
 
+# naTolAvg calculates the average of a list of values, tolerating and ignoring NAs
+# Normally, using mean(values, na.rm=TRUE) would suffice, but data.table interpets this to mean 
+# the entire column and put that in every cell when using `:=`, which we don't want. A quick 
+# google didn't turn up an elegant solution, so we're writing an inefficient but simple to implement solution
+naTolAvg <- function(value1, value2) {
+	if (length(value1) != length(value2)) {
+		stop("input vectors must be the same length")
+	}
+	outvec = vector(mode="double", length=length(value1))
+	
+	for (i in 1:length(value1)) {
+		if (is.na(value1[i])) {
+			# throw in some rounding for convenience
+			outvec[i] = round(value2[i], 4)
+		} else if (is.na(value2[i])) {
+			outvec[i] = round(value1[i], 4)
+		} else {
+			outvec[i] = round(0.5 * (value1[i]+value2[i]), 4)
+		}
+	}
+	
+	return(outvec)
+}
+
 MergeTables <- function(table538, xgTable) {
 	table538$date = as.character(table538$date)
 	xgTable$date = as.character(xgTable$date)
@@ -121,8 +145,8 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,home := NULL]
 	
 	# "deserved xg"
-	mergeTable[,adjXGFor := 0.5 * (xgFor_footystats * 90 / (90 + timeTrailingSecondHalf) + xgFor_footballxg * 90/(90+timeTrailingSecondHalf))]
-	mergeTable[,adjXGOpp := 0.5 * (xgOpp_footystats * 90 / (90 + timeLeadingSecondHalf) + xgOpp_footballxg * 90/(90+timeLeadingSecondHalf))]
+	mergeTable[,adjXGFor := naTolAvg(xgFor_footystats * 90 / (90 + timeTrailingSecondHalf), xgFor_footballxg * 90/(90+timeTrailingSecondHalf))]
+	mergeTable[,adjXGOpp := naTolAvg(xgOpp_footystats * 90 / (90 + timeLeadingSecondHalf), xgOpp_footballxg * 90/(90+timeLeadingSecondHalf))]
 	
 	# xg win probabilities
 	mergeTable[hasHappened == TRUE,xgW_footballxg := xgOdds(xgFor_footballxg, xgOpp_footballxg, "win")]
@@ -138,9 +162,9 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[hasHappened == TRUE,adjXGTie := xgOdds(adjXGFor, adjXGOpp, "tie")]
 	
 	
-	mergeTable[hasHappened == TRUE, xgWin := 0.5 * (xgW_footballxg + xgW_footystats)]
-	mergeTable[hasHappened == TRUE, xgLoss := 0.5 * (xgL_footballxg + xgL_footystats)]
-	mergeTable[hasHappened == TRUE, xgTie := 0.5 * (xgT_footballxg + xgT_footystats)]
+	mergeTable[hasHappened == TRUE, xgWin := naTolAvg(xgW_footballxg, xgW_footystats)]
+	mergeTable[hasHappened == TRUE, xgLoss := naTolAvg(xgL_footballxg, xgL_footystats)]
+	mergeTable[hasHappened == TRUE, xgTie := naTolAvg(xgT_footballxg, xgT_footystats)]
 	mergeTable[,c("xgW_footballxg","xgL_footballxg","xgT_footballxg","xgW_footystats","xgL_footystats","xgT_footystats") := NULL]
 	
 	mergeTable[,xgPoints := xgWin * 3 + xgTie]

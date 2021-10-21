@@ -323,7 +323,7 @@ makeGameReport <- function(pastGameRow) {
 																pastGameRow$xgOpp_footballxg, pastGameRow$xgOpp_footballxg,
 																pastGameRow$pgFor, pastGameRow$pgOpp)
 	)
-	maxGoals = max(c(gTable$Count, 4))
+	maxGoals = max(c(gTable$Count, 4), na.rm=TRUE)
 	
 	goals = ggplot(gTable) + 
 		geom_bar(aes(x=Stat, y=Count, fill=Club), position = "dodge", stat="identity") +

@@ -24,7 +24,7 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 		
 		tabPanel("Match Reports",
 						 sidebarPanel(
-						 		selectInput("gameToDisplay", label="Select Match", choices=mergeTable$gameDesc[mergeTable$hasHappened]),
+						 		selectInput("gameToDisplay", label="Select Match", choices=rev(mergeTable$gameDesc[mergeTable$hasHappened])),
 						 		htmlOutput("gameCardInfoTable"),
 						 		width=4
 						 ),
