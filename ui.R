@@ -3,6 +3,7 @@ library(shiny)
 library(shinyjs)
 library(shinythemes)
 library(shinyBS)
+library(ggiraph)
 
 shinyUI(
 navbarPage(title="Dons By the Numbers", id="navbarID",
@@ -34,7 +35,7 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 	  ),
 
 		tabPanel("Basic Stats",
-						 plotOutput("plotBasic_1"),
+						 girafeOutput("plotBasic_1"),
 						 plotOutput("plotBasic_2"),
 						 plotOutput("plotBasic_3")
 		),

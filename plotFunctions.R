@@ -5,6 +5,7 @@ library(data.table)
 library(knitr)
 library(kableExtra)
 library(patchwork)
+library(ggiraph)
 
 baseTheme = function() {
 	baseSize = 14
@@ -186,20 +187,25 @@ makeXGPlots <- function(mergeTable) {
 }
 
 makeBasicStatPlots <- function(mergeTable) {
-	possTable = mergeTable[hasHappened == TRUE,c("date","possessionFor")]
+	possTable = mergeTable[hasHappened == TRUE,c("date","possessionFor","gameDesc")]
 	setnames(possTable, old="possessionFor", new="Percentage")
 	possTable$Type = "Possession"
-	shotTable = mergeTable[hasHappened == TRUE,c("date","shotShare")]
+	shotTable = mergeTable[hasHappened == TRUE,c("date","shotShare","gameDesc")]
 	setnames(shotTable, old="shotShare", new="Percentage")
 	shotTable$Type = "Shot Share"
 	percentageTable = rbind(possTable, shotTable)
 	
 	g1 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
-		geom_bar(data=percentageTable, aes(x=date, y=Percentage, fill=Type), stat="identity", position="dodge") + 
+		geom_bar_interactive(stat="identity", position="dodge", data=percentageTable, aes(x=date, y=Percentage, fill=Type, 
+																																 tooltip=paste(gameDesc,"\n",Type,": ", Percentage, "%", sep="")) ) + 
 		geom_line(aes(x=date, y=cumPossess, color="Avg Possession"), size=1.25) +
-		geom_point(aes(x=date, y=cumPossess, color="Avg Possession"), size=1.5) + 
+		geom_point_interactive(size=1.5,
+													 aes(x=date, y=cumPossess, color="Avg Possession", 
+													 		tooltip=paste("Cumulative Possession: ", cumPossess, "%", sep=""))) + 
 		geom_line(aes(x=date, y=cumShotShare, color="Avg Shot Share"), size=1.25) +
-		geom_point(aes(x=date, y=cumShotShare, color="Avg Shot Share"), size=1.5) + 
+		geom_point_interactive(size=1.5,
+													 aes(x=date, y=cumShotShare, color="Avg Shot Share", 
+													 		tooltip=paste("Cumulative Shot Share: ", cumShotShare, "%", sep=""))) + 
 		labs(x=NULL, y="Percentage") + 
 		geom_hline(yintercept=50) +
 		scale_color_manual(values=masterColorList()) + scale_fill_manual(values=masterColorList()) +

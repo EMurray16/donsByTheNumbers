@@ -1,5 +1,6 @@
 # This is the server for the Dons By the Numbers app
 library(shiny)
+library(ggiraph)
 
 server <- function(input, output, session) {
 	print("Dons by the Numbers")
@@ -15,7 +16,7 @@ server <- function(input, output, session) {
 		output$plotXG_3 = renderPlot(plotsXG[[3]])
 		output$plotXG_4 = renderPlot(plotsXG[[4]])
 		
-		output$plotBasic_1 = renderPlot(plotsBasic[[1]])
+		output$plotBasic_1 = renderGirafe({girafe(ggobj=plotsBasic[[1]], width_svg=9)})
 		output$plotBasic_2 = renderPlot(plotsBasic[[2]])
 		output$plotBasic_3 = renderPlot(plotsBasic[[3]])
 		
