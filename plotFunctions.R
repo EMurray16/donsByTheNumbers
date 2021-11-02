@@ -346,7 +346,7 @@ makeGameReport <- function(pastGameRow) {
 		ggtitle("Modeled Outcome Probabilities") +
 		scale_fill_manual(values=masterColorList()) +
 		geom_hline(yintercept=0.5) +
-		scale_y_continuous(breaks=c(seq(0,0.4,0.2), 0.5, seq(0.6,1,0.2)), labels=c(seq(0,40,20), '50%', seq(40,0,-20)), limits=c(0,1)) +
+		scale_y_continuous(breaks=c(seq(0,0.4,0.2), 0.5, seq(0.6,1,0.2)), labels=c(seq(0,40,20), '50%', seq(40,0,-20)), limits=c(0,1.01)) +
 		scale_x_discrete(limits=c("Score-Adjusted xG", "Avg xG Model", "FiveThirtyEight")) +
 		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss") +
 		annotate("text", y=0.95, x="FiveThirtyEight", label="Win")
