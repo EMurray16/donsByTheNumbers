@@ -6,19 +6,19 @@ server <- function(input, output, session) {
 	print("Dons by the Numbers")
 	# Define this function where output is available
 	renderOutputPlots <- function() {
-		output$plot538_1 = renderPlot(plots538[[1]])
-		output$plot538_2 = renderPlot(plots538[[2]])
-		output$plot538_3 = renderPlot(plots538[[3]])
-		output$plot538_4 = renderPlot(plots538[[4]])
+		output$plot538_1 = renderGirafe({girafe(ggobj=plots538[[1]], width_svg=9)})
+		output$plot538_2 = renderGirafe({girafe(ggobj=plots538[[2]], width_svg=9)})
+		output$plot538_3 = renderGirafe({girafe(ggobj=plots538[[3]], width_svg=9)})
+		output$plot538_4 = renderGirafe({girafe(ggobj=plots538[[4]], width_svg=9)})
 		
-		output$plotXG_1 = renderPlot(plotsXG[[1]])
-		output$plotXG_2 = renderPlot(plotsXG[[2]])
-		output$plotXG_3 = renderPlot(plotsXG[[3]])
-		output$plotXG_4 = renderPlot(plotsXG[[4]])
+		output$plotXG_2 = renderGirafe({girafe(ggobj=plotsXG[[1]], width_svg=11, height_svg = 8)})
+		output$plotXG_3 = renderGirafe({girafe(ggobj=plotsXG[[2]], width_svg=11, height_svg = 8)})
+		output$plotXG_4 = renderGirafe({girafe(ggobj=plotsXG[[3]], width_svg=11, height_svg = 8)})
+		output$plotXG_1 = renderGirafe({girafe(ggobj=plotsXG[[4]], width_svg=9)})
 		
 		output$plotBasic_1 = renderGirafe({girafe(ggobj=plotsBasic[[1]], width_svg=9)})
-		output$plotBasic_2 = renderPlot(plotsBasic[[2]])
-		output$plotBasic_3 = renderPlot(plotsBasic[[3]])
+		output$plotBasic_2 = renderGirafe({girafe(ggobj=plotsBasic[[2]], width_svg=9)})
+		output$plotBasic_3 = renderGirafe({girafe(ggobj=plotsBasic[[3]], width_svg=9)})
 		
 		output$fteTimestamp = renderText(fteUpdateTimestamp)
 		

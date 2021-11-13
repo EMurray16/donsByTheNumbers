@@ -36,19 +36,19 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 
 		tabPanel("Basic Stats",
 						 girafeOutput("plotBasic_1"),
-						 plotOutput("plotBasic_2"),
-						 plotOutput("plotBasic_3")
+						 girafeOutput("plotBasic_2"),
+						 girafeOutput("plotBasic_3")
 		),
 
 		tabPanel("FiveThirtyEight",
 						 bsCollapsePanel("What is FiveThirtyEight's model?",
 						 								includeMarkdown("docs/about538.md")
 						 ),
-						 mainPanel(
-						 	plotOutput("plot538_1"),
-						 	plotOutput("plot538_2"),
-						 	plotOutput("plot538_3"),
-						 	plotOutput("plot538_4")
+						 mainPanel(width=12,
+						 	girafeOutput("plot538_1"),
+						 	girafeOutput("plot538_2"),
+						 	girafeOutput("plot538_3"),
+						 	girafeOutput("plot538_4")
 						 )
 	  ),
 		
@@ -57,10 +57,10 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 								withMathJax(includeMarkdown("docs/aboutXG.md"))
 						 ),
 						 mainPanel(width=12,
-						 		plotOutput("plotXG_1"),
-						 		plotOutput("plotXG_2"),
-						 		plotOutput("plotXG_3"),
-						 		plotOutput("plotXG_4")
+						 		girafeOutput("plotXG_1"),
+						 		girafeOutput("plotXG_2"),
+						 		girafeOutput("plotXG_3"),
+						 		girafeOutput("plotXG_4")
 						 )
 	  ),
 		
