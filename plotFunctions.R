@@ -5,6 +5,7 @@ library(data.table)
 library(knitr)
 library(kableExtra)
 library(patchwork)
+library(ggiraph)
 
 baseTheme = function() {
 	baseSize = 14
@@ -47,56 +48,49 @@ gameCardTheme <- function() {
 }
 
 make538Plots <- function(mergeTable) {
-	# start by plotting points vs projected points
-	runningAhead = round(mergeTable$adjProjPoints[nrow(mergeTable)] - mergeTable$cumProjPoints[nrow(mergeTable)], 2)
-	if (runningAhead > 0.25) {
-		pointsCaption = paste("The Dons are currently running **", runningAhead, " points ahead** of FiveThirtyEight's projection.",sep="")
-	} else if (runningAhead < 0.25) {
-		pointsCaption = paste("The Dons are currently running **", -runningAhead, " points behind** FiveThirtyEight's projection.", sep="")
-	} else {
-		pointsCaption = paste("The Dons are *on pace* with FiveThirtyEight's projections.")
-	}
+	mergeTable[,tooltip1 := paste(date, "\nFiveThirtyEight Projection:", cumProjPoints)]
 	
-	g1 = ggplot(mergeTable) + baseTheme() +
-		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
-		geom_line(aes(x=date, y=adjProjPoints), color="grey", size=0.5) +
-		geom_line(data=mergeTable[hasHappened == TRUE,], aes(x=date, y=cumPoints, color="Wimbledon"), size=1) +
+	g4 = ggplot(mergeTable, aes(x=date)) + baseTheme() +
+		geom_hline_interactive(yintercept=75, color=rgb(0,0.75,0.5), linetype="dashed", tooltip="Promotion zone: 75 points") +
+		geom_hline_interactive(yintercept=50, color=rgb(1, 0.1, 0), linetype="dashed", tooltip="Relegation dagner zone: 50 points") +
+		geom_line(size=2, color="grey", aes(y=adjProjPoints)) +
+		geom_line(size=2, aes(y=cumProjPoints, color="FiveThirtyEight")) +
+		geom_line(data=mergeTable[hasHappened == TRUE,], size=2, aes(x=date, y=cumPoints, color="Wimbledon")) +
+		geom_point_interactive(color="grey", aes(y=adjProjPoints,
+																						 tooltip=paste(date,"\nAdjusted Projection:", adjProjPoints))) +
+		geom_point_interactive(aes(y=cumProjPoints, color="FiveThirtyEight", 
+															 tooltip=paste(date,"\nFiveThirtyEight Projection:", cumProjPoints))) +
+		geom_point_interactive(data=mergeTable[hasHappened == TRUE,], aes(x=date, y=cumPoints, color="Wimbledon", 
+																																			tooltip=paste(date,"\nPoints:", cumPoints))) +
 		ggtitle("Point accumulation versus FiveThirtyEight projections") +
-		labs(x=NULL, y="Points", caption=pointsCaption) + 
+		labs(x=NULL, y="Points") + 
 		ylim(0, 100) +
-		geom_hline(yintercept=75, color=rgb(0,0.75,0.5), linetype="dashed") +
-		geom_hline(yintercept=50, color=rgb(1, 0.1, 0), linetype="dashed") +
 		scale_color_manual(values=masterColorList())
 	
-	spiPercentIncrease = round((mergeTable$wimbledonSPI[nrow(mergeTable)] - mergeTable$wimbledonSPI[1]) / mergeTable$wimbledonSPI[1] * 100, 2)
-	if (spiPercentIncrease > 0) {
-		spiCaption = paste("AFC Wimbledon's SPI has **increased ", spiPercentIncrease, "%** since the start of the season, from ",
-											 mergeTable$wimbledonSPI[1], " to ", mergeTable$wimbledonSPI[nrow(mergeTable)], ".", sep="")
-	} else if (spiPercentIncrease < 0) {
-		spiCaption = paste("AFC Wimbledon's SPI has **decreased ", spiPercentIncrease, "%** since the start of the season, from ",
-											 mergeTable$wimbledonSPI[1], " to ", mergeTable$wimbledonSPI[nrow(mergeTable)], ".", sep="")
-	} else {
-		spiCaption = paste("AFC Wimbledon's SPI is the same as it was at the start of the season - ", mergeTable$wimbledonSPI[1], ".", sep="")
-	}
-	
-	g2 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
-		geom_line(aes(x=date, y=wimbledonSPI), color="#0000ff") +
-		geom_hline(yintercept=35, color=rgb(0,0.75,0.5), linetype="dashed") +
-		geom_hline(yintercept=15.75, color=rgb(1, 0.1, 0), linetype="dashed") +
-		labs(x=NULL, y="FiveThirtyEight SPI", caption=spiCaption) + 
+	g2 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date, y=wimbledonSPI)) + baseTheme() +
+		geom_hline_interactive(yintercept=35, color=rgb(0,0.75,0.5), linetype="dashed", tooltip="Promotion zone: 35 SPI") +
+		geom_hline_interactive(yintercept=15.75, color=rgb(1, 0.1, 0), linetype="dashed", tooltip="Relegation danger zone: 15 SPI") +
+		geom_line(size=2, color="#0000ff") +
+		geom_point_interactive(color="#0000ff", aes(tooltip=paste(date, ":", wimbledonSPI))) +
+		labs(x=NULL, y="FiveThirtyEight SPI") + 
 		ylim(0,50) + xlim(as.Date("2021-08-01"), as.Date("2022-05-01")) +
 		ggtitle("Wimbledon's Soccer Power Index through the season")
 	
-	g3 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date)) + baseTheme() +
-		geom_line(aes(y=relegationOdds, color="Relegation")) +
-		geom_line(aes(y=promotionPlayoffOdds, color="Promotion Playoffs")) +
+	g1 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date)) + baseTheme() +
+		geom_line(aes(y=relegationOdds, color="Relegation"), size=2) +
+		geom_line(aes(y=promotionPlayoffOdds, color="Promotion Playoffs"), size=2) +
+		geom_point_interactive(aes(y=relegationOdds, color="Relegation", 
+															tooltip=paste(gameDesc, "\nRelegation Odds: ", relegationOdds,"%", sep=""))) +
+		geom_point_interactive(aes(y=promotionPlayoffOdds, color="Promotion Playoffs", 
+															tooltip=paste(gameDesc,"\nPromotion Playoffs: ", promotionPlayoffOdds,"%", sep=""))) +
 		ggtitle("FiveThirtyEight's Relegation and Promotion Playoff Odds") +
 		labs(x=NULL, y="Percent Chance") + ylim(0, 100) +
 		scale_color_manual(values = masterColorList()) + 
 		xlim(as.Date("2021-08-01"), as.Date("2022-05-01"))
 	
-	g4 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
-		geom_bar(aes(x=date, y=importance), fill="black", stat="identity") +
+	g3 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
+		geom_bar_interactive(fill="black", stat="identity", 
+						 aes(x=date, y=importance, tooltip=paste(gameDesc, "\n", importance))) +
 		labs(x=NULL, y="Importance") + ggtitle("FiveThirtyEight Importance of each game")
 	
 	return(list(g1, g2, g3, g4))
@@ -104,13 +98,13 @@ make538Plots <- function(mergeTable) {
 
 makeXGPlots <- function(mergeTable) {
 	footystatsTable = mergeTable[hasHappened == TRUE,
-															 c("date","gFor","gOpp","xgFor_footystats","xgOpp_footystats","gdae_footystats","cumGDAE_footystats")]
+															 c("gameDesc","date","gFor","gOpp","xgFor_footystats","xgOpp_footystats","gdae_footystats","cumGDAE_footystats")]
 	setnames(footystatsTable, old=c("xgFor_footystats","xgOpp_footystats","gdae_footystats","cumGDAE_footystats"), 
 					 new=c("xgFor","xgOpp","GDAE","cumGDAE"))
 	footystatsTable[,Model := "footystats.org"]
 	
 	footballxgTable = mergeTable[hasHappened == TRUE,
-															 c("date","gFor","gOpp","xgFor_footballxg","xgOpp_footballxg","gdae_footballxg","cumGDAE_footballxg")]
+															 c("gameDesc","date","gFor","gOpp","xgFor_footballxg","xgOpp_footballxg","gdae_footballxg","cumGDAE_footballxg")]
 	setnames(footballxgTable, old=c("xgFor_footballxg","xgOpp_footballxg","gdae_footballxg","cumGDAE_footballxg"), 
 					 new=c("xgFor","xgOpp","GDAE","cumGDAE"))
 	footballxgTable[,Model := "footballxg.com"]
@@ -118,66 +112,74 @@ makeXGPlots <- function(mergeTable) {
 	xgPlotTable = rbind(footystatsTable, footballxgTable)
 	
 	footystatsTable2 = mergeTable[hasHappened == TRUE,
-																c("date","cumLuckOff_footystats","cumLuckDef_footystats","cumLuckCom_footystats")]
+																c("gameDesc","date","cumLuckOff_footystats","cumLuckDef_footystats","cumLuckCom_footystats")]
 	setnames(footystatsTable2, old=c("cumLuckOff_footystats","cumLuckDef_footystats","cumLuckCom_footystats"), 
 					 new=c("luckOff","luckDef","luckComb"))
 	footystatsTable2[,Model := "footystats.org"]
 	
 	footballxgTable2 = mergeTable[hasHappened == TRUE,
-																c("date","cumLuckOff_footballxg","cumLuckDef_footballxg","cumLuckCom_footballxg")]
+																c("gameDesc","date","cumLuckOff_footballxg","cumLuckDef_footballxg","cumLuckCom_footballxg")]
 	setnames(footballxgTable2, old=c("cumLuckOff_footballxg","cumLuckDef_footballxg","cumLuckCom_footballxg"), 
 					 new=c("luckOff","luckDef","luckComb"))
 	footballxgTable2[,Model := "footballxg.com"]
 	
 	luckPlotTable = rbind(footystatsTable2, footballxgTable2)
 	
-	g1 = ggplot(xgPlotTable) + baseTheme() +
+	g1 = ggplot(xgPlotTable, aes(x=date)) + baseTheme() +
 		geom_hline(yintercept=0) +
-		geom_bar(aes(x=date, y=gFor, fill="Goals For"), stat="identity") +
-		geom_bar(aes(x=date, y=0-gOpp, fill="Goals Against"), stat="identity") +
-		geom_line(aes(x=date, y=xgFor, color="xG For"),size=1) +
-		geom_line(aes(x=date, y=0-xgOpp, color="xG Against"), size=1) +
-		geom_point(aes(x=date, y=xgFor, color="xG For"), size=2) +
-		geom_point(aes(x=date, y=0-xgOpp, color="xG Against"), size=2) +
+		geom_bar_interactive(stat="identity", aes(y=gFor, fill="Goals For", tooltip=paste(gameDesc,"\nScore:", gFor, "-", gOpp))) +
+		geom_bar_interactive(stat="identity", aes(y=0-gOpp, fill="Goals Against", tooltip=paste(gameDesc,"\nScore:", gFor, "-", gOpp))) +
+		geom_line(aes(y=xgFor, color="xG For"), size=2) +
+		geom_line(aes(y=0-xgOpp, color="xG Against"), size=2) +
+		geom_point_interactive(size=3, aes(y=xgFor, color="xG For", tooltip=paste(gameDesc,"\nxG:", xgFor, "-", xgOpp))) +
+		geom_point_interactive(size=3, aes(y=0-xgOpp, color="xG Against", tooltip=paste(gameDesc,"\nxG:", xgFor, "-", xgOpp))) +
 		ggtitle("Expected Goals versus Actual Goals") +
 		labs(x=NULL, y=NULL) + 
 		scale_fill_manual(values=masterColorList()) +
 		scale_color_manual(values=masterColorList()) +
-		facet_grid(~Model) +
+		facet_grid(rows=vars(Model)) +
 		scale_y_continuous(breaks=seq(-6,6,2), labels=c(6,4,2,0,2,4,6), limits=c(-5,5))
 	
-	g2 = ggplot(xgPlotTable) + baseTheme() +
-		geom_line(aes(x=date, y=GDAE), color=rgb(0.8,0.6,0.7), size=2) +
-		geom_point(aes(x=date, y=GDAE), color=rgb(0.8,0.6,0.7), size=2) +
-		geom_line(aes(x=date, y=cumGDAE, color="Cumulative"), size=2) +
-		geom_point(aes(x=date, y=cumGDAE, color="Cumulative"), size=2) +
+	g4 = ggplot(xgPlotTable, aes(x=date)) + baseTheme() +
+		geom_line(aes(y=GDAE), color=rgb(0.8,0.6,0.7), size=2) +
+		geom_line(aes(y=cumGDAE, color="Cumulative"), size=2) +
+		geom_point_interactive(color=rgb(0.8,0.6,0.7), size=3, 
+													 aes(y=GDAE, tooltip=paste(gameDesc,"\nGoal Difference:",gFor-gOpp,"\nxG Difference",xgFor-xgOpp))) +
+		geom_point_interactive(aes(y=cumGDAE, color="Cumulative", tooltip=paste(date,"\nCumulative GDAE:",cumGDAE)), size=3) +
 		geom_hline(yintercept=0) + 
 		labs(x=NULL, y="GDAE") +
 		ggtitle("Goal Difference Above Expected") +
 		scale_color_manual(values=masterColorList()) +
-		facet_grid(~Model)
+		facet_grid(rows=vars(Model))
 	
-	g3 = ggplot(luckPlotTable) + baseTheme() +
+	g3 = ggplot(luckPlotTable, aes(x=date)) + baseTheme() +
 		geom_hline(yintercept=1) + 
-		geom_line(aes(x=date, y=luckOff, color="Offense")) + 
-		geom_line(aes(x=date, y=luckDef, color="Defense")) +
-		geom_line(aes(x=date, y=luckComb, color="Combined")) +
-		geom_point(aes(x=date, y=luckOff, color="Offense")) + 
-		geom_point(aes(x=date, y=luckDef, color="Defense")) +
-		geom_point(aes(x=date, y=luckComb, color="Combined")) +
+		geom_line(aes(y=luckOff, color="Offense"), size=2) + 
+		geom_line(aes(y=luckDef, color="Defense"), size=2) +
+		geom_line(aes(y=luckComb, color="Combined"), size=2) +
+		geom_point_interactive(size=3, aes(y=luckOff, color="Offense", tooltip=paste(date,"\nOffensive RAGE:",round(luckOff, 4)))) + 
+		geom_point_interactive(size=3, aes(y=luckDef, color="Defense", tooltip=paste(date,"\nDefensive RAGE:",round(luckDef, 4)))) +
+		geom_point_interactive(size=3, aes(y=luckComb, color="Combined", tooltip=paste(date,"\nCombined RAGE:",round(luckComb, 4)))) +
 		labs(x=NULL, y="Luck") +
 		scale_color_manual(values=masterColorList()) +
-		facet_grid(~Model) +
+		facet_grid(rows=vars(Model)) +
 		ggtitle("Cumulative RAGE", subtitle="**R**atio of **A**ctual **G**oals to **E**xpected")
 	
 	pastGameTable = mergeTable[hasHappened == TRUE,]
 	pointMax = max(c(pastGameTable$cumXGPoints, pastGameTable$adjCumXGPoints, pastGameTable$cumPoints, pastGameTable$cumProjPoints))
-	g4 = ggplot(pastGameTable, aes(x=date)) + baseTheme() +
+	g2 = ggplot(pastGameTable, aes(x=date)) + baseTheme() +
 		geom_line(aes(y=cumXGPoints, color="Average xG"), size=1) +
 		geom_line(aes(y=adjCumXGPoints, color="Score-Adjusted xG"), size=1) +
-		geom_line(aes(y=cumPoints, color="Wimbledon"), size=1.5) +
-		geom_point(aes(y=cumPoints, color="Wimbledon"), size=2.5) +
 		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
+		geom_line(aes(y=cumPoints, color="Wimbledon"), size=2) +
+		geom_point_interactive(size=2, aes(y=cumXGPoints, color="Average xG", 
+																			 tooltip=paste(date,"\nxG Model:",cumXGPoints))) +
+		geom_point_interactive(size=2, aes(y=adjCumXGPoints, color="Score-Adjusted xG", 
+																			 tooltip=paste(date,"\nAdjusted xG Model:", adjCumXGPoints))) +
+		geom_point_interactive(size=2, aes(x=date, y=cumProjPoints, color="FiveThirtyEight", 
+																			 tooltip=paste(date,"\nFiveThirtyEight Model:",cumProjPoints))) +
+		geom_point_interactive(size=2.5, aes(y=cumPoints, color="Wimbledon",
+																			 tooltip=paste(date,"\nPoints:", cumPoints))) +
 		ggtitle("Point accumulation versus xG Models") +
 		labs(x=NULL, y="Points") + ylim(0, pointMax + 3) +
 		scale_color_manual(values=masterColorList())
@@ -186,20 +188,25 @@ makeXGPlots <- function(mergeTable) {
 }
 
 makeBasicStatPlots <- function(mergeTable) {
-	possTable = mergeTable[hasHappened == TRUE,c("date","possessionFor")]
+	possTable = mergeTable[hasHappened == TRUE,c("date","possessionFor","gameDesc")]
 	setnames(possTable, old="possessionFor", new="Percentage")
 	possTable$Type = "Possession"
-	shotTable = mergeTable[hasHappened == TRUE,c("date","shotShare")]
+	shotTable = mergeTable[hasHappened == TRUE,c("date","shotShare","gameDesc")]
 	setnames(shotTable, old="shotShare", new="Percentage")
 	shotTable$Type = "Shot Share"
 	percentageTable = rbind(possTable, shotTable)
 	
 	g1 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
-		geom_bar(data=percentageTable, aes(x=date, y=Percentage, fill=Type), stat="identity", position="dodge") + 
+		geom_bar_interactive(stat="identity", position="dodge", data=percentageTable, aes(x=date, y=Percentage, fill=Type, 
+																																 tooltip=paste(gameDesc,"\n",Type,": ", Percentage, "%", sep="")) ) + 
 		geom_line(aes(x=date, y=cumPossess, color="Avg Possession"), size=1.25) +
-		geom_point(aes(x=date, y=cumPossess, color="Avg Possession"), size=1.5) + 
+		geom_point_interactive(size=1.5,
+													 aes(x=date, y=cumPossess, color="Avg Possession", 
+													 		tooltip=paste("Cumulative Possession: ", cumPossess, "%", sep=""))) + 
 		geom_line(aes(x=date, y=cumShotShare, color="Avg Shot Share"), size=1.25) +
-		geom_point(aes(x=date, y=cumShotShare, color="Avg Shot Share"), size=1.5) + 
+		geom_point_interactive(size=1.5,
+													 aes(x=date, y=cumShotShare, color="Avg Shot Share", 
+													 		tooltip=paste("Cumulative Shot Share: ", cumShotShare, "%", sep=""))) + 
 		labs(x=NULL, y="Percentage") + 
 		geom_hline(yintercept=50) +
 		scale_color_manual(values=masterColorList()) + scale_fill_manual(values=masterColorList()) +
@@ -208,19 +215,22 @@ makeBasicStatPlots <- function(mergeTable) {
 	
 	g2 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() + 
 		geom_line(aes(x=date, y=cumGFor, color="Goals For")) +
-		geom_point(aes(x=date, y=cumGFor, color="Goals For")) +
 		geom_line(aes(x=date, y=cumGOpp, color="Goals Against")) +
-		geom_point(aes(x=date, y=cumGOpp, color="Goals Against")) +
+		geom_point_interactive(aes(x=date, y=cumGFor, color="Goals For", tooltip=paste(gameDesc,"\n", gFor, "scored, total:", cumGFor))) +
+		geom_point_interactive(aes(x=date, y=cumGOpp, color="Goals Against", tooltip=paste(gameDesc,"\n", gOpp, "against, total:", cumGOpp))) +
 		labs(x=NULL, y="Goals") + 
 		scale_color_manual(values=masterColorList()) +
 		ggtitle("Season Total Goals For and Against") + ylim(0,max(c(mergeTable$cumGFor, mergeTable$cumGOpp)))
 	
 	g3 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() + 
-		geom_bar(aes(x=date, y=gFor, fill="Goals For"), stat="identity") +
-		geom_bar(aes(x=date, y=0-gOpp, fill="Goals Against"), stat="identity") +
+		geom_bar_interactive(stat="identity", 
+												 aes(x=date, y=gFor, fill="Goals For", tooltip=paste(gameDesc,"\n", gFor, "-", gOpp))) +
+		geom_bar_interactive(stat="identity", 
+												 aes(x=date, y=0-gOpp, fill="Goals Against", tooltip=paste(gameDesc,"\n", gFor, "-", gOpp))) +
 		geom_hline(yintercept=0) +
 		geom_line(aes(x=date, y=goalDiff, color="Net Goal Difference"), size=2) +
-		geom_point(aes(x=date, y=goalDiff, color="Net Goal Difference"), size=3) +
+		geom_point_interactive(size=3, 
+													 aes(x=date, y=goalDiff, color="Net Goal Difference", tooltip=paste(gameDesc,"\nNet Difference:",goalDiff))) +
 		labs(x=NULL, y="Goals") + 
 		scale_fill_manual(values=masterColorList()) + scale_color_manual(values=masterColorList()) +
 		ggtitle("Goal Difference") +
@@ -348,20 +358,29 @@ makeGameReport <- function(pastGameRow) {
 		geom_hline(yintercept=0.5) +
 		scale_y_continuous(breaks=c(seq(0,0.4,0.2), 0.5, seq(0.6,1,0.2)), labels=c(seq(0,40,20), '50%', seq(40,0,-20)), limits=c(0,1.01)) +
 		scale_x_discrete(limits=c("Score-Adjusted xG", "Avg xG Model", "FiveThirtyEight")) +
-		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss") +
-		annotate("text", y=0.95, x="FiveThirtyEight", label="Win")
+		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss", fontface=2) +
+		annotate("text", y=0.95, x="FiveThirtyEight", label="Win", fontface=2)
 	
 	spiPlotTable = data.table(Club=c(pastGameRow$Location,pastGameRow$opponent), 
 														SPI=c(pastGameRow$wimbledonSPI, pastGameRow$opponentSPI),
 														Fill=c(pastGameRow$Location, "Opponent"))
 	spiUpperLim = max(c(35, spiPlotTable$SPI))
 	
+	# Assing the color of the AFC Wimbledon text in the plot
+	if (pastGameRow$Location == "Plough Lane") {
+		wimbledonTextColor=masterColorList()[["Away"]]
+	} else {
+		wimbledonTextColor=masterColorList()[["Plough Lane"]]
+	}
+	
 	spi = ggplot(spiPlotTable, aes(x=Club, y=SPI, fill=Fill)) +
 		geom_bar(stat="identity") +
 		gameCardTheme() + coord_flip() + labs(x=NULL, y=NULL) + 
-		ggtitle("Soccer Power Index") + ylim(0,spiUpperLim) +
+		ggtitle("FiveThirtyEight's Soccer Power Index") + ylim(0,spiUpperLim) +
 		scale_fill_manual(values=masterColorList()) +
-		theme(axis.text.y=element_blank())
+		theme(axis.text.y=element_blank()) +
+		annotate("text", y=5, x=pastGameRow$opponent, label=pastGameRow$opponent, fontface=2) +
+		annotate("text", y=5, x=pastGameRow$Location, label="AFC Wimbledon", color=wimbledonTextColor, fontface=2)
 	
 	finalPlot = spi / percentPlot / goals / winPlot + 
 		plot_annotation(paste("Game Report:", pastGameRow$gameDesc), 

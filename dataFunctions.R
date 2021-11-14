@@ -132,8 +132,8 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,cumLuckOff_footballxg := cumGFor / cumXGFor_footballxg]
 	mergeTable[,cumLuckDef_footballxg := cumXGOpp_footballxg / cumGOpp]
 	mergeTable[,cumLuckCom_footballxg := 0.5 * (cumLuckOff_footballxg + cumLuckDef_footballxg)]
-	mergeTable[,cumPossess := cumsum(possessionFor) / seq_along(possessionFor)]
-	mergeTable[,cumShotShare := cumsum(shotShare) / seq_along(shotShare)]
+	mergeTable[,cumPossess := round(cumsum(possessionFor) / seq_along(possessionFor), 1)]
+	mergeTable[,cumShotShare := round(cumsum(shotShare) / seq_along(shotShare), 1)]
 	mergeTable[,cumGDAE_footystats := cumsum(gdae_footystats)]
 	mergeTable[,cumGDAE_footballxg := cumsum(gdae_footballxg)]
 	
