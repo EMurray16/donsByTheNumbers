@@ -82,13 +82,11 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 	a("on GitHub.", href="https://github.com/EMurray16/donsByTheNumbers")),
 						 bsCollapse(
 						 	bsCollapsePanel("Planned Changes",
-						 									p(" - I would like to add tooltips to the plots include details of each game"),
 						 									p(" - Eventually I may have the plots scale more elegantly with the size of the screen 
 						 									(may be too lazy to implement this one)")
 						 	),
 						 	open="Planned Changes"
 						 )
-						 
 	  ),
 		
 		theme=shinytheme("yeti"), 

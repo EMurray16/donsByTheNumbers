@@ -50,7 +50,7 @@ gameCardTheme <- function() {
 make538Plots <- function(mergeTable) {
 	mergeTable[,tooltip1 := paste(date, "\nFiveThirtyEight Projection:", cumProjPoints)]
 	
-	g1 = ggplot(mergeTable, aes(x=date)) + baseTheme() +
+	g4 = ggplot(mergeTable, aes(x=date)) + baseTheme() +
 		geom_hline_interactive(yintercept=75, color=rgb(0,0.75,0.5), linetype="dashed", tooltip="Promotion zone: 75 points") +
 		geom_hline_interactive(yintercept=50, color=rgb(1, 0.1, 0), linetype="dashed", tooltip="Relegation dagner zone: 50 points") +
 		geom_line(size=2, color="grey", aes(y=adjProjPoints)) +
@@ -76,7 +76,7 @@ make538Plots <- function(mergeTable) {
 		ylim(0,50) + xlim(as.Date("2021-08-01"), as.Date("2022-05-01")) +
 		ggtitle("Wimbledon's Soccer Power Index through the season")
 	
-	g3 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date)) + baseTheme() +
+	g1 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date)) + baseTheme() +
 		geom_line(aes(y=relegationOdds, color="Relegation"), size=2) +
 		geom_line(aes(y=promotionPlayoffOdds, color="Promotion Playoffs"), size=2) +
 		geom_point_interactive(aes(y=relegationOdds, color="Relegation", 
@@ -88,7 +88,7 @@ make538Plots <- function(mergeTable) {
 		scale_color_manual(values = masterColorList()) + 
 		xlim(as.Date("2021-08-01"), as.Date("2022-05-01"))
 	
-	g4 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
+	g3 = ggplot(mergeTable[hasHappened == TRUE,]) + baseTheme() +
 		geom_bar_interactive(fill="black", stat="identity", 
 						 aes(x=date, y=importance, tooltip=paste(gameDesc, "\n", importance))) +
 		labs(x=NULL, y="Importance") + ggtitle("FiveThirtyEight Importance of each game")
@@ -140,7 +140,7 @@ makeXGPlots <- function(mergeTable) {
 		facet_grid(rows=vars(Model)) +
 		scale_y_continuous(breaks=seq(-6,6,2), labels=c(6,4,2,0,2,4,6), limits=c(-5,5))
 	
-	g2 = ggplot(xgPlotTable, aes(x=date)) + baseTheme() +
+	g4 = ggplot(xgPlotTable, aes(x=date)) + baseTheme() +
 		geom_line(aes(y=GDAE), color=rgb(0.8,0.6,0.7), size=2) +
 		geom_line(aes(y=cumGDAE, color="Cumulative"), size=2) +
 		geom_point_interactive(color=rgb(0.8,0.6,0.7), size=3, 
@@ -167,7 +167,7 @@ makeXGPlots <- function(mergeTable) {
 	
 	pastGameTable = mergeTable[hasHappened == TRUE,]
 	pointMax = max(c(pastGameTable$cumXGPoints, pastGameTable$adjCumXGPoints, pastGameTable$cumPoints, pastGameTable$cumProjPoints))
-	g4 = ggplot(pastGameTable, aes(x=date)) + baseTheme() +
+	g2 = ggplot(pastGameTable, aes(x=date)) + baseTheme() +
 		geom_line(aes(y=cumXGPoints, color="Average xG"), size=1) +
 		geom_line(aes(y=adjCumXGPoints, color="Score-Adjusted xG"), size=1) +
 		geom_line(aes(x=date, y=cumProjPoints, color="FiveThirtyEight"), size=1) +
@@ -358,20 +358,29 @@ makeGameReport <- function(pastGameRow) {
 		geom_hline(yintercept=0.5) +
 		scale_y_continuous(breaks=c(seq(0,0.4,0.2), 0.5, seq(0.6,1,0.2)), labels=c(seq(0,40,20), '50%', seq(40,0,-20)), limits=c(0,1)) +
 		scale_x_discrete(limits=c("Score-Adjusted xG", "Avg xG Model", "FiveThirtyEight")) +
-		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss") +
-		annotate("text", y=0.95, x="FiveThirtyEight", label="Win")
+		annotate("text", y=0.05, x="FiveThirtyEight", label="Loss", fontface=2) +
+		annotate("text", y=0.95, x="FiveThirtyEight", label="Win", fontface=2)
 	
 	spiPlotTable = data.table(Club=c(pastGameRow$Location,pastGameRow$opponent), 
 														SPI=c(pastGameRow$wimbledonSPI, pastGameRow$opponentSPI),
 														Fill=c(pastGameRow$Location, "Opponent"))
 	spiUpperLim = max(c(35, spiPlotTable$SPI))
 	
+	# Assing the color of the AFC Wimbledon text in the plot
+	if (pastGameRow$Location == "Plough Lane") {
+		wimbledonTextColor=masterColorList()[["Away"]]
+	} else {
+		wimbledonTextColor=masterColorList()[["Plough Lane"]]
+	}
+	
 	spi = ggplot(spiPlotTable, aes(x=Club, y=SPI, fill=Fill)) +
 		geom_bar(stat="identity") +
 		gameCardTheme() + coord_flip() + labs(x=NULL, y=NULL) + 
-		ggtitle("Soccer Power Index") + ylim(0,spiUpperLim) +
+		ggtitle("FiveThirtyEight's Soccer Power Index") + ylim(0,spiUpperLim) +
 		scale_fill_manual(values=masterColorList()) +
-		theme(axis.text.y=element_blank())
+		theme(axis.text.y=element_blank()) +
+		annotate("text", y=5, x=pastGameRow$opponent, label=pastGameRow$opponent, fontface=2) +
+		annotate("text", y=5, x=pastGameRow$Location, label="AFC Wimbledon", color=wimbledonTextColor, fontface=2)
 	
 	finalPlot = spi / percentPlot / goals / winPlot + 
 		plot_annotation(paste("Game Report:", pastGameRow$gameDesc), 
