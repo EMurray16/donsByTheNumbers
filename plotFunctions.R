@@ -69,7 +69,7 @@ make538Plots <- function(mergeTable) {
 	
 	g2 = ggplot(mergeTable[hasHappened == TRUE,], aes(x=date, y=wimbledonSPI)) + baseTheme() +
 		geom_hline_interactive(yintercept=35, color=rgb(0,0.75,0.5), linetype="dashed", tooltip="Promotion zone: 35 SPI") +
-		geom_hline_interactive(yintercept=15.75, color=rgb(1, 0.1, 0), linetype="dashed", tooltip="Relegation danger zone: 15 SPI") +
+		geom_hline_interactive(yintercept=15.75, color=rgb(1, 0.1, 0), linetype="dashed", tooltip="Relegation danger zone: 15.75 SPI") +
 		geom_line(size=2, color="#0000ff") +
 		geom_point_interactive(color="#0000ff", aes(tooltip=paste(date, ":", wimbledonSPI))) +
 		labs(x=NULL, y="FiveThirtyEight SPI") + 
@@ -330,7 +330,7 @@ makeGameReport <- function(pastGameRow) {
 											Club = rep(c(pastGameRow$Location,"Opponent"), 4),
 											Count = c(pastGameRow$gFor, pastGameRow$gOpp, 
 																pastGameRow$xgFor_footystats, pastGameRow$xgOpp_footystats,
-																pastGameRow$xgOpp_footballxg, pastGameRow$xgOpp_footballxg,
+																pastGameRow$xgFor_footballxg, pastGameRow$xgOpp_footballxg,
 																pastGameRow$pgFor, pastGameRow$pgOpp)
 	)
 	maxGoals = max(c(gTable$Count, 4), na.rm=TRUE)
