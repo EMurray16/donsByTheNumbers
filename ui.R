@@ -64,6 +64,12 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 )
 	  ),
 		
+		tabPanel("League Table",
+						 mainPanel(width=12,
+						 					htmlOutput("leagueTable")
+	 					 )
+		 ),
+		
 		tabPanel("Update Data",
 						 p("The last time the FiveThirtyEight data was updated is:"),
 						 textOutput("fteTimestamp"),

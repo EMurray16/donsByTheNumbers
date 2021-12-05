@@ -12,19 +12,23 @@ if (modevalue == 0) {
 cat(dataDir)
 
 Rdata538 = paste(dataDir, "table538.Rdata", sep="")
+RdataLeagueTable = paste(dataDir, "leagueTable.Rdata", sep="")
 RdataTimestamp = paste(dataDir, "fteUpdateTimestamp.Rdata", sep="")
 
 shouldUpdate = TRUE
-if (file.exists(Rdata538) & file.exists(RdataTimestamp)) {
+if (file.exists(Rdata538) & file.exists(RdataLeagueTable) & file.exists(RdataTimestamp)) {
 	load(Rdata538)
+	load(RdataLeagueTable)
 	load(RdataTimestamp)
-	if (exists("table538") & exists("fteUpdateTimestamp")) {
+	if (exists("table538") & exists("leagueTable") & exists("fteUpdateTimestamp")) {
 		shouldUpdate = FALSE
 	}
 }
 
 if (shouldUpdate) {
-	table538 = UpdateFiveThirtyEight(Rdata538, RdataTimestamp)
+	updateData = UpdateFiveThirtyEight(Rdata538, RdataLeagueTable, RdataTimestamp)
+	table538 = updateData[[1]]
+	leagueTable = updateData[[2]]
 	load(RdataTimestamp)
 }
 
@@ -37,3 +41,4 @@ plots538 = make538Plots(mergeTable)
 plotsXG = makeXGPlots(mergeTable)
 plotsBasic = makeBasicStatPlots(mergeTable)
 tablesGame = makeGameTables(mergeTable)
+leagueKable = makeLeagueTable(leagueTable)

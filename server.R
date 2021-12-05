@@ -24,6 +24,8 @@ server <- function(input, output, session) {
 		
 		output$tableGame_1 = renderUI(HTML(tablesGame[[1]]))
 		output$tableGame_2 = renderUI(HTML(tablesGame[[2]]))
+		
+		output$leagueTable = renderUI(HTML(leagueKable))
 	}
 	
 	renderOutputPlots()

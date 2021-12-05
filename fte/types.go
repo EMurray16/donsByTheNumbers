@@ -4,6 +4,7 @@ import "strconv"
 
 var (
 	csvURL = "https://projects.fivethirtyeight.com/soccer-api/club/spi_matches_latest.csv"
+	spiURL = "https://projects.fivethirtyeight.com/soccer-api/club/spi_global_rankings.csv"
 
 	// notes on column names: team 1 is always the home team
 	colNames = []string{"season","date","league",
@@ -11,12 +12,17 @@ var (
 		"proj_score1","proj_score2","importance1","importance2",
 		"score1","score2"}
 
+	spiColNames = []string{"name","league","spi"}
+
 	// convenience strings
 	league1 = "English League One"
 	wimbledon = "AFC Wimbledon"
 	currentSeason = "2021"
 
 	colInds map[string]int
+	spiColInds map[string]int
+
+	leagueTable map[string]teamStats
 )
 
 type game struct {
@@ -201,5 +207,44 @@ func (ge *GameExport) BuildFromGameSlice(gameSlice []game) {
 		ge.CumProjPoints[i] = g.cumProjPoints
 		ge.CumPoints[i] = g.cumPoints
 		ge.CumGoalDiff[i] = g.goalDiff
+	}
+}
+
+type scheduleGame struct {
+	date, homeTeam, awayTeam string
+	hasHappened bool
+	homeGoals, awayGoals int
+}
+
+type teamStats struct {
+	name string
+	matchesPlayed, points, goalDiff int
+	spi, pointPercentage            float64
+}
+
+type TableExport struct {
+	Teams []string
+	MatchesPlayed, Points, GoalDiff []int
+	SPI, PointPercentage            []float64
+}
+
+func (TE *TableExport) BuildFromLeagueTable(leagueTable map[string]teamStats) {
+	nTeams := len(leagueTable) // this should always be 24, but we'll calculate it to be sure
+
+	// allocate the slices
+	TE.Teams = make([]string, 0, nTeams)
+	TE.MatchesPlayed = make([]int, 0, nTeams)
+	TE.Points = make([]int, 0, nTeams)
+	TE.GoalDiff = make([]int, 0, nTeams)
+	TE.SPI = make([]float64, 0, nTeams)
+	TE.PointPercentage = make([]float64, 0, nTeams)
+
+	for team, stats := range leagueTable {
+		TE.Teams = append(TE.Teams, team)
+		TE.MatchesPlayed = append(TE.MatchesPlayed, stats.matchesPlayed)
+		TE.Points = append(TE.Points, stats.points)
+		TE.GoalDiff = append(TE.GoalDiff, stats.goalDiff)
+		TE.SPI = append(TE.SPI, stats.spi)
+		TE.PointPercentage = append(TE.PointPercentage, stats.pointPercentage)
 	}
 }

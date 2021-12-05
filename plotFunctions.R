@@ -403,3 +403,13 @@ makeGameReport <- function(pastGameRow) {
 	gameKable = kable(basicTable, escape=FALSE) %>% kable_styling(bootstrap_options ="condensed", full_width = FALSE)
 	return(list(finalPlot,gameKable))
 }
+
+makeLeagueTable <- function(leagueTable) {
+	k1 = kable(leagueTable, escape=F,
+						 row.names = 1:24,
+						 col.names=c("Team","Matches Played","Points","Goal Differential","Point Percentage","FiveThirtyEight SPI"),) %>%
+		kable_styling(bootstrap_options = c("striped","hover","condensed","responsive"), fixed_thead=TRUE, full_width=FALSE) %>%
+		row_spec(which(leagueTable$team == "AFC Wimbledon"), bold=T)
+
+	return(k1)
+}
