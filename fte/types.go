@@ -7,34 +7,34 @@ var (
 	spiURL = "https://projects.fivethirtyeight.com/soccer-api/club/spi_global_rankings.csv"
 
 	// notes on column names: team 1 is always the home team
-	colNames = []string{"season","date","league",
-		"team1","team2","spi1","spi2","prob1","prob2","probtie",
-		"proj_score1","proj_score2","importance1","importance2",
-		"score1","score2"}
+	colNames = []string{"season", "date", "league",
+		"team1", "team2", "spi1", "spi2", "prob1", "prob2", "probtie",
+		"proj_score1", "proj_score2", "importance1", "importance2",
+		"score1", "score2"}
 
-	spiColNames = []string{"name","league","spi"}
+	spiColNames = []string{"name", "league", "spi"}
 
 	// convenience strings
-	league1 = "English League One"
-	wimbledon = "AFC Wimbledon"
+	league1       = "English League One"
+	wimbledon     = "AFC Wimbledon"
 	currentSeason = "2021"
 
-	colInds map[string]int
+	colInds    map[string]int
 	spiColInds map[string]int
 
 	leagueTable map[string]teamStats
 )
 
 type game struct {
-	gameDate, opponentTeam string
-	wimbledonHome bool
-	wimbledonSPI, opponentSPI float64
-	win, loss, tie, projPoints float64
-	projFor, projAgainst float64
-	importance float64
+	gameDate, opponentTeam                 string
+	wimbledonHome                          bool
+	wimbledonSPI, opponentSPI              float64
+	win, loss, tie, projPoints             float64
+	projFor, projAgainst                   float64
+	importance                             float64
 	actualFor, actualAgainst, actualPoints int
-	cumProjPoints float64
-	cumPoints, goalDiff int
+	cumProjPoints                          float64
+	cumPoints, goalDiff                    int
 }
 
 func (g *game) toStrings() []string {
@@ -124,9 +124,9 @@ func (g *game) buildFromRow(row []string, wimbledonHome bool) (err error) {
 		}
 	}
 
-	g.projPoints = g.win * 3 + g.tie
+	g.projPoints = g.win*3 + g.tie
 
-	if g.actualFor - g.actualAgainst > 0 {
+	if g.actualFor-g.actualAgainst > 0 {
 		g.actualPoints = 3
 	} else if g.actualFor == g.actualAgainst {
 		g.actualPoints = 1
@@ -138,15 +138,15 @@ func (g *game) buildFromRow(row []string, wimbledonHome bool) (err error) {
 }
 
 type GameExport struct {
-	Dates, Opponents []string
-	Home []int
-	WimbledonSPI, OpponentSPI []float64
+	Dates, Opponents                       []string
+	Home                                   []int
+	WimbledonSPI, OpponentSPI              []float64
 	WinProb, LossProb, TieProb, ProjPoints []float64
-	ProjGoalsFor, ProjGoalsAgainst []float64
-	Importance []float64
-	GoalsFor, GoalsAgainst, Points []int
-	CumProjPoints []float64
-	CumPoints, CumGoalDiff []int
+	ProjGoalsFor, ProjGoalsAgainst         []float64
+	Importance                             []float64
+	GoalsFor, GoalsAgainst, Points         []int
+	CumProjPoints                          []float64
+	CumPoints, CumGoalDiff                 []int
 }
 
 func (ge *GameExport) BuildFromGameSlice(gameSlice []game) {
@@ -212,20 +212,21 @@ func (ge *GameExport) BuildFromGameSlice(gameSlice []game) {
 
 type scheduleGame struct {
 	date, homeTeam, awayTeam string
-	hasHappened bool
-	homeGoals, awayGoals int
+	hasHappened              bool
+	homeGoals, awayGoals     int
 }
 
 type teamStats struct {
-	name string
-	matchesPlayed, points, goalDiff int
-	spi, pointPercentage            float64
+	name                                 string
+	matchesPlayed, points, goalDiff      int
+	goalsFor, goalsAgainst               int
+	spi, pointPercentage, goalPercentage float64
 }
 
 type TableExport struct {
-	Teams []string
-	MatchesPlayed, Points, GoalDiff []int
-	SPI, PointPercentage            []float64
+	Teams                                []string
+	MatchesPlayed, Points, GoalDiff      []int
+	SPI, PointPercentage, GoalPercentage []float64
 }
 
 func (TE *TableExport) BuildFromLeagueTable(leagueTable map[string]teamStats) {
@@ -238,6 +239,7 @@ func (TE *TableExport) BuildFromLeagueTable(leagueTable map[string]teamStats) {
 	TE.GoalDiff = make([]int, 0, nTeams)
 	TE.SPI = make([]float64, 0, nTeams)
 	TE.PointPercentage = make([]float64, 0, nTeams)
+	TE.GoalPercentage = make([]float64, 0, nTeams)
 
 	for team, stats := range leagueTable {
 		TE.Teams = append(TE.Teams, team)
@@ -246,5 +248,33 @@ func (TE *TableExport) BuildFromLeagueTable(leagueTable map[string]teamStats) {
 		TE.GoalDiff = append(TE.GoalDiff, stats.goalDiff)
 		TE.SPI = append(TE.SPI, stats.spi)
 		TE.PointPercentage = append(TE.PointPercentage, stats.pointPercentage)
+		TE.GoalPercentage = append(TE.GoalPercentage, stats.goalPercentage)
+	}
+}
+
+type ScheduleExport struct {
+	Team, Opponent []string
+	// These could be bools, but ints are easier to pass into R
+	IsHome, HasHappened []int
+}
+
+func (SE *ScheduleExport) BuildFromScheduleSlice(schedSlice []scheduleGame) {
+	nGames := len(schedSlice)
+
+	SE.Team = make([]string, 0, nGames*2)
+	SE.Opponent = make([]string, 0, nGames*2)
+	SE.IsHome = make([]int, 0, nGames*2)
+	SE.HasHappened = make([]int, 0, nGames*2)
+
+	for _, match := range schedSlice {
+		var hasHappenedInt int = 0
+		if match.hasHappened {
+			hasHappenedInt = 1
+		}
+
+		SE.Team = append(SE.Team, []string{match.homeTeam, match.awayTeam}...)
+		SE.Opponent = append(SE.Opponent, []string{match.awayTeam, match.homeTeam}...)
+		SE.IsHome = append(SE.IsHome, []int{1, 0}...)
+		SE.HasHappened = append(SE.HasHappened, []int{hasHappenedInt, hasHappenedInt}...)
 	}
 }

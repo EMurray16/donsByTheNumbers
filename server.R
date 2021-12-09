@@ -34,7 +34,7 @@ server <- function(input, output, session) {
 			withProgress(value=1, message="Getting and parsing FiveThirtyEight data...",
 									 expr = {
 									 	# step 1: get the new data
-									 	table538 <<- UpdateFiveThirtyEight(Rdata538, RdataTimestamp)
+									 	table538 <<- UpdateFiveThirtyEight(Rdata538, RdataLeagueTable, RdataLeagueSched, RdataTimestamp)
 									 	
 									 	session$reload()
 									 }

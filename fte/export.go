@@ -8,10 +8,10 @@ import (
 	"strconv"
 )
 
-func GetSPILatest() (wimbledonGameExport GameExport, leagueTableExport TableExport, err error) {
-	gameSlice, leagueTable, err := getFTE()
+func GetSPILatest() (wimbledonGameExport GameExport, leagueTableExport TableExport, scheduleExport ScheduleExport, err error) {
+	gameSlice, leagueTable, schedule, err := getFTE()
 	if err != nil {
-		return wimbledonGameExport, leagueTableExport, err
+		return wimbledonGameExport, leagueTableExport, scheduleExport, err
 	}
 
 	// handle Wimbledon's information
@@ -20,7 +20,10 @@ func GetSPILatest() (wimbledonGameExport GameExport, leagueTableExport TableExpo
 	// handle the league table
 	leagueTableExport.BuildFromLeagueTable(leagueTable)
 
-	return wimbledonGameExport, leagueTableExport, nil
+	// handle the schedule
+	scheduleExport.BuildFromScheduleSlice(schedule)
+
+	return wimbledonGameExport, leagueTableExport, scheduleExport, nil
 }
 
 func gameResultFromRow(row []string) (goal1, goal2 int) {
@@ -36,10 +39,10 @@ func gameResultFromRow(row []string) (goal1, goal2 int) {
 	return goal1, goal2
 }
 
-func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err error) {
+func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, schedule []scheduleGame, err error) {
 	resp538, err := http.Get(csvURL)
 	if err != nil {
-		return wimbledonGames, leagueTable, err
+		return wimbledonGames, leagueTable, schedule, err
 	}
 	defer resp538.Body.Close()
 
@@ -48,7 +51,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 	// get the header
 	header, err := read538.Read()
 	if err != nil {
-		return wimbledonGames, leagueTable, err
+		return wimbledonGames, leagueTable, schedule, err
 	}
 
 	// parse the header for the columns we want
@@ -64,7 +67,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 
 	wimbledonGames = make([]game, 0, 46)
 	leagueTable = make(map[string]teamStats, 24)
-	leagueSchedule := make([]scheduleGame, 0, 24*23)
+	schedule = make([]scheduleGame, 0, 24*23)
 
 	for {
 		row, err := read538.Read()
@@ -72,7 +75,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return wimbledonGames, leagueTable, err
+			return wimbledonGames, leagueTable, schedule, err
 		}
 
 		// eliminate rows that don't apply
@@ -84,22 +87,22 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 		goal1, goal2 := gameResultFromRow(row)
 		// a value of -1 for goal1 means the game hasn't happened
 		if goal1 == -1 {
-			leagueSchedule = append(leagueSchedule, scheduleGame{
-				date: row[colInds["date"]],
-				homeTeam: row[colInds["team1"]],
-				awayTeam: row[colInds["team2"]],
-				homeGoals: goal1,
-				awayGoals: goal2,
+			schedule = append(schedule, scheduleGame{
+				date:        row[colInds["date"]],
+				homeTeam:    row[colInds["team1"]],
+				awayTeam:    row[colInds["team2"]],
+				homeGoals:   goal1,
+				awayGoals:   goal2,
 				hasHappened: false,
 			})
 		}
 		if goal1 != -1 {
-			leagueSchedule = append(leagueSchedule, scheduleGame{
-				date: row[colInds["date"]],
-				homeTeam: row[colInds["team1"]],
-				awayTeam: row[colInds["team2"]],
-				homeGoals: goal1,
-				awayGoals: goal2,
+			schedule = append(schedule, scheduleGame{
+				date:        row[colInds["date"]],
+				homeTeam:    row[colInds["team1"]],
+				awayTeam:    row[colInds["team2"]],
+				homeGoals:   goal1,
+				awayGoals:   goal2,
 				hasHappened: true,
 			})
 
@@ -112,6 +115,11 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 
 			team1stats.goalDiff += goal1 - goal2
 			team2stats.goalDiff += goal2 - goal1
+
+			team1stats.goalsFor += goal1
+			team2stats.goalsAgainst += goal1
+			team1stats.goalsAgainst += goal2
+			team2stats.goalsFor += goal2
 
 			if goal1 > goal2 {
 				team1stats.points += 3
@@ -136,12 +144,12 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 		if row[colInds["team1"]] == wimbledon {
 			err := rowGame.buildFromRow(row, true)
 			if err != nil {
-				return wimbledonGames, leagueTable, err
+				return wimbledonGames, leagueTable, schedule, err
 			}
 		} else {
 			err := rowGame.buildFromRow(row, false)
 			if err != nil {
-				return wimbledonGames, leagueTable, err
+				return wimbledonGames, leagueTable, schedule, err
 			}
 		}
 
@@ -168,7 +176,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 	// add SPI to the leage table and calculate points per game
 	respSPI, err := http.Get(spiURL)
 	if err != nil {
-		return wimbledonGames, leagueTable, err
+		return wimbledonGames, leagueTable, schedule, err
 	}
 	defer respSPI.Body.Close()
 
@@ -177,7 +185,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 	// get the header
 	headerSPI, err := readSPI.Read()
 	if err != nil {
-		return wimbledonGames, leagueTable, err
+		return wimbledonGames, leagueTable, schedule, err
 	}
 
 	// parse the header for the columns we want
@@ -197,7 +205,7 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			return wimbledonGames, leagueTable,nil
+			return wimbledonGames, leagueTable, schedule, nil
 		}
 
 		if row[colInds["league"]] != league1 {
@@ -206,15 +214,15 @@ func getFTE() (wimbledonGames []game, leagueTable map[string]teamStats, err erro
 
 		spi, err := strconv.ParseFloat(row[spiColInds["spi"]], 64)
 		if err != nil {
-			return wimbledonGames, leagueTable, err
+			return wimbledonGames, leagueTable, schedule, err
 		}
 
 		teamRow := leagueTable[row[spiColInds["name"]]]
 		teamRow.spi = spi
-		teamRow.pointPercentage = (float64(teamRow.points) / float64(teamRow.matchesPlayed * 3)) * 100.0
+		teamRow.pointPercentage = (float64(teamRow.points) / float64(teamRow.matchesPlayed*3)) * 100.0
+		teamRow.goalPercentage = float64(teamRow.goalsFor) / float64(teamRow.goalsFor+teamRow.goalsAgainst) * 100.0
 		leagueTable[row[spiColInds["name"]]] = teamRow
 	}
 
-	return wimbledonGames, leagueTable, nil
+	return wimbledonGames, leagueTable, schedule, nil
 }
-

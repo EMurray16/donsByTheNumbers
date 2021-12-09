@@ -15,7 +15,7 @@ import (
 
 //export UpdateFiveThirtyEight
 func UpdateFiveThirtyEight() C.SEXP {
-	outGames, outTable, err := fte.GetSPILatest()
+	outGames, outTable, outSched, err := fte.GetSPILatest()
 	if err != nil {
 		errString := err.Error()
 		stringSEXP := rsexp.String2sexp([]string{errString})
@@ -45,15 +45,21 @@ func UpdateFiveThirtyEight() C.SEXP {
 	sexpSlice1[17] = rsexp.Int2sexp(outGames.CumGoalDiff)
 
 	// build an R list from the league table
-	sexpSlice2 := make([]rsexp.GoSEXP, 6)
-
+	sexpSlice2 := make([]rsexp.GoSEXP, 7)
 	sexpSlice2[0] = rsexp.String2sexp(outTable.Teams)
 	sexpSlice2[1] = rsexp.Int2sexp(outTable.MatchesPlayed)
 	sexpSlice2[2] = rsexp.Int2sexp(outTable.Points)
 	sexpSlice2[3] = rsexp.Int2sexp(outTable.GoalDiff)
 	sexpSlice2[4] = rsexp.Float2sexp(outTable.PointPercentage)
-	sexpSlice2[5] = rsexp.Float2sexp(outTable.SPI)
+	sexpSlice2[5] = rsexp.Float2sexp(outTable.GoalPercentage)
+	sexpSlice2[6] = rsexp.Float2sexp(outTable.SPI)
 
+	// build an R list from the schedule table
+	sexpSlice3 := make([]rsexp.GoSEXP, 4)
+	sexpSlice3[0] = rsexp.String2sexp(outSched.Team)
+	sexpSlice3[1] = rsexp.String2sexp(outSched.Opponent)
+	sexpSlice3[2] = rsexp.Int2sexp(outSched.IsHome)
+	sexpSlice3[3] = rsexp.Int2sexp(outSched.HasHappened)
 
 	// the last element is a string with the timestamp
 	t := time.Now()
@@ -62,8 +68,9 @@ func UpdateFiveThirtyEight() C.SEXP {
 
 	list1 := rsexp.List2sexp(rsexp.NewList(sexpSlice1...))
 	list2 := rsexp.List2sexp(rsexp.NewList(sexpSlice2...))
+	list3 := rsexp.List2sexp(rsexp.NewList(sexpSlice3...))
 
-	finalList := rsexp.NewList(list1, list2, dateSEXP)
+	finalList := rsexp.NewList(list1, list2, list3, dateSEXP)
 	outSEXP := rsexp.List2sexp(finalList)
 
 	return *(*C.SEXP)(outSEXP.Point)

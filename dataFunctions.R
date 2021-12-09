@@ -1,6 +1,6 @@
 # This file contains functions related to the data tables used in the Dons By The Numbers app
 
-UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, timestampFilename) {
+UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, leagueSchedFilename, timestampFilename) {
 	# load the shared library if needed
 	if (!is.loaded("UpdateFiveThirtyEight")) {
 		dyn.load("getFTE.so")
@@ -13,7 +13,8 @@ UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, timestampF
 	
 	wimbledonGames = res[[1]]
 	leagueTable = res[[2]]
-	fteUpdateTimestamp = res[[3]]
+	leagueSchedule = res[[3]]
+	fteUpdateTimestamp = res[[4]]
 	
 	# Create a data.table from the results
 	table538 = data.table(date          = wimbledonGames[[1]],
@@ -42,17 +43,26 @@ UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, timestampF
 													 points          = leagueTable[[3]],
 													 goalDiff        = leagueTable[[4]],
 													 pointPercentage = round(leagueTable[[5]], 2),
-													 spi             = leagueTable[[6]]
+													 goalPercentage  = round(leagueTable[[6]], 2),
+													 spi             = leagueTable[[7]]
 	 )
+	leagueTable[,strength := round((pointPercentage + goalPercentage + 2*spi) / 3, 2)]
 	setorderv(leagueTable, cols=c("points","matchesPlayed","goalDiff"), order=c(-1,1,-1))
+	
+	leagueSchedule = data.table(team        = leagueSchedule[[1]],
+															opponent    = leagueSchedule[[2]],
+															isHome      = leagueSchedule[[3]],
+															hasHappened = leagueSchedule[[4]]
+	)
 
 	# write the table538 to an Rdata file
 	save(table538, file=tableFilename)
 	save(leagueTable, file=leagueTableFilename)
+	save(leagueSchedule, file=leagueSchedFilename)
 	save(fteUpdateTimestamp, file=timestampFilename)
 	
 	# return the table as well
-	return(list(table538, leagueTable))
+	return(list(table538, leagueTable, leagueSchedule))
 }
 
 xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
@@ -185,4 +195,22 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,adjCumXGPoints := cumsum(adjXGPoints)]
 	
 	return(mergeTable)
+}
+
+AddScheduleStrength <- function(leagueTable, leagueSchedule) {
+	leagueSchedule = merge(leagueSchedule, leagueTable[,c("team","strength")], by.x="opponent", by.y="team")
+	# Adjust the opponent strength up for away games
+	leagueSchedule[isHome == 0,adjStrength := strength * 1.15]
+	# and adjust the opponent strength down for home games
+	leagueSchedule[isHome == 1,adjStrength := strength * 0.85]
+	
+	strengthPlayed = leagueSchedule[hasHappened == 1,.(strengthPlayed = round(mean(adjStrength), 2)), by="team"]
+	strengthToCome = leagueSchedule[hasHappened == 0,.(strengthToCome = round(mean(adjStrength), 2)), by="team"]
+	
+	strengthTable = merge(strengthPlayed, strengthToCome, by="team")
+	
+	leagueTable = merge(leagueTable, strengthTable, by="team")
+	setorderv(leagueTable, cols=c("points","matchesPlayed","goalDiff"), order=c(-1,1,-1))
+	
+	return(leagueTable)
 }
