@@ -65,9 +65,14 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 	  ),
 		
 		tabPanel("League Table",
+						 bsCollapsePanel("What is team and schedule strength?",
+						 								withMathJax(includeMarkdown("docs/strengthOfSchedule.md"))
+ 						 ),
 						 mainPanel(width=12,
-						 					htmlOutput("leagueTable")
-	 					 )
+						 					htmlOutput("leagueTable"),
+						 					htmlOutput("averageStrengthText"),
+						 					br() #additional padding at the bottom of the screen
+						 )
 		 ),
 		
 		tabPanel("Update Data",
