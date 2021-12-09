@@ -24,6 +24,12 @@ server <- function(input, output, session) {
 		
 		output$tableGame_1 = renderUI(HTML(tablesGame[[1]]))
 		output$tableGame_2 = renderUI(HTML(tablesGame[[2]]))
+		
+		output$leagueTable = renderUI(HTML(leagueKable))
+		avgStrength = as.character(round(mean(leagueTable$strength), 2))
+		output$averageStrengthText = renderUI(HTML(paste("The average team strength across League One is currently ",
+																											strong(round(mean(leagueTable$strength), 2)), ".", sep="")
+		))
 	}
 	
 	renderOutputPlots()
@@ -32,8 +38,11 @@ server <- function(input, output, session) {
 			withProgress(value=1, message="Getting and parsing FiveThirtyEight data...",
 									 expr = {
 									 	# step 1: get the new data
-									 	table538 <<- UpdateFiveThirtyEight(Rdata538, RdataTimestamp)
-									 	
+									 	resp538List <- UpdateFiveThirtyEight(Rdata538, RdataLeagueTable, RdataLeagueSched, RdataTimestamp)
+									 	table538 <<- resp538List[[1]]
+									 	leagueTable <<- resp538List[[2]]
+									 	leagueSchedule <<- resp538List[[3]]
+
 									 	session$reload()
 									 }
 			)

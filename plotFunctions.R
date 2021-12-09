@@ -403,3 +403,23 @@ makeGameReport <- function(pastGameRow) {
 	gameKable = kable(basicTable, escape=FALSE) %>% kable_styling(bootstrap_options ="condensed", full_width = FALSE)
 	return(list(finalPlot,gameKable))
 }
+
+makeLeagueTable <- function(leagueTable) {
+	leagueTable$strengthPlayed = cell_spec(leagueTable$strengthPlayed,background=rgb(0.8,0.4,0,alpha=(leagueTable$strengthPlayed-40)/10))
+	leagueTable$strengthToCome = cell_spec(leagueTable$strengthToCome,background=rgb(0.8,0.4,0,alpha=(leagueTable$strengthToCome-40)/10))
+	leagueTable$pointPercentage = cell_spec(leagueTable$pointPercentage, background=rgb(0,0.6,0.5,alpha=leagueTable$pointPercentage/80))
+	leagueTable$goalPercentage = cell_spec(leagueTable$goalPercentage, background=rgb(0,0.6,0.5,alpha=leagueTable$goalPercentage/80))
+	leagueTable$spi = cell_spec(leagueTable$spi, background=rgb(0,0.6,0.5,alpha=leagueTable$spi/40))
+	leagueTable$strength = cell_spec(leagueTable$strength, background=rgb(0,0.6,0.5,alpha=leagueTable$strength/80))
+	
+	k1 = kable(leagueTable, escape=F,
+						 row.names = 1:24,
+						 col.names=c("Team","Matches Played","Points","Goal Difference",
+						 						"Points %","Goals %", "SPI","Overall Strength", # Team Quality
+						 						"Played","To Come")) %>% # strength of schedule
+		kable_styling(bootstrap_options = c("striped","hover","condensed","responsive"), fixed_thead=TRUE, full_width=FALSE) %>%
+		row_spec(which(leagueTable$team == "AFC Wimbledon"), bold=T) %>%
+		add_header_above(c(" "=5, "Team Quality"=4, "Strength of Schedule"=2))
+
+	return(k1)
+}

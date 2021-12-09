@@ -15,52 +15,74 @@ import (
 
 //export UpdateFiveThirtyEight
 func UpdateFiveThirtyEight() C.SEXP {
-	outGames, err := fte.GetSPILatest()
+	outGames, outTable, outSched, err := fte.GetSPILatest()
 	if err != nil {
 		errString := err.Error()
 		stringSEXP := rsexp.String2sexp([]string{errString})
 		return *(*C.SEXP)(stringSEXP.Point)
 	}
 
-	// build the R list from the games
-	sexpSlice := make([]rsexp.GoSEXP, 19)
+	// build an R list from the games
+	sexpSlice1 := make([]rsexp.GoSEXP, 18)
 
-	sexpSlice[0] = rsexp.String2sexp(outGames.Dates)
-	sexpSlice[1] = rsexp.String2sexp(outGames.Opponents)
-	sexpSlice[2] = rsexp.Int2sexp(outGames.Home)
-	sexpSlice[3] = rsexp.Float2sexp(outGames.WimbledonSPI)
-	sexpSlice[4] = rsexp.Float2sexp(outGames.OpponentSPI)
-	sexpSlice[5] = rsexp.Float2sexp(outGames.WinProb)
-	sexpSlice[6] = rsexp.Float2sexp(outGames.LossProb)
-	sexpSlice[7] = rsexp.Float2sexp(outGames.TieProb)
-	sexpSlice[8] = rsexp.Float2sexp(outGames.ProjPoints)
-	sexpSlice[9] = rsexp.Float2sexp(outGames.ProjGoalsFor)
-	sexpSlice[10] = rsexp.Float2sexp(outGames.ProjGoalsAgainst)
-	sexpSlice[11] = rsexp.Float2sexp(outGames.Importance)
-	sexpSlice[12] = rsexp.Int2sexp(outGames.GoalsFor)
-	sexpSlice[13] = rsexp.Int2sexp(outGames.GoalsAgainst)
-	sexpSlice[14] = rsexp.Int2sexp(outGames.Points)
-	sexpSlice[15] = rsexp.Float2sexp(outGames.CumProjPoints)
-	sexpSlice[16] = rsexp.Int2sexp(outGames.CumPoints)
-	sexpSlice[17] = rsexp.Int2sexp(outGames.CumGoalDiff)
+	sexpSlice1[0] = rsexp.String2sexp(outGames.Dates)
+	sexpSlice1[1] = rsexp.String2sexp(outGames.Opponents)
+	sexpSlice1[2] = rsexp.Int2sexp(outGames.Home)
+	sexpSlice1[3] = rsexp.Float2sexp(outGames.WimbledonSPI)
+	sexpSlice1[4] = rsexp.Float2sexp(outGames.OpponentSPI)
+	sexpSlice1[5] = rsexp.Float2sexp(outGames.WinProb)
+	sexpSlice1[6] = rsexp.Float2sexp(outGames.LossProb)
+	sexpSlice1[7] = rsexp.Float2sexp(outGames.TieProb)
+	sexpSlice1[8] = rsexp.Float2sexp(outGames.ProjPoints)
+	sexpSlice1[9] = rsexp.Float2sexp(outGames.ProjGoalsFor)
+	sexpSlice1[10] = rsexp.Float2sexp(outGames.ProjGoalsAgainst)
+	sexpSlice1[11] = rsexp.Float2sexp(outGames.Importance)
+	sexpSlice1[12] = rsexp.Int2sexp(outGames.GoalsFor)
+	sexpSlice1[13] = rsexp.Int2sexp(outGames.GoalsAgainst)
+	sexpSlice1[14] = rsexp.Int2sexp(outGames.Points)
+	sexpSlice1[15] = rsexp.Float2sexp(outGames.CumProjPoints)
+	sexpSlice1[16] = rsexp.Int2sexp(outGames.CumPoints)
+	sexpSlice1[17] = rsexp.Int2sexp(outGames.CumGoalDiff)
+
+	// build an R list from the league table
+	sexpSlice2 := make([]rsexp.GoSEXP, 7)
+	sexpSlice2[0] = rsexp.String2sexp(outTable.Teams)
+	sexpSlice2[1] = rsexp.Int2sexp(outTable.MatchesPlayed)
+	sexpSlice2[2] = rsexp.Int2sexp(outTable.Points)
+	sexpSlice2[3] = rsexp.Int2sexp(outTable.GoalDiff)
+	sexpSlice2[4] = rsexp.Float2sexp(outTable.PointPercentage)
+	sexpSlice2[5] = rsexp.Float2sexp(outTable.GoalPercentage)
+	sexpSlice2[6] = rsexp.Float2sexp(outTable.SPI)
+
+	// build an R list from the schedule table
+	sexpSlice3 := make([]rsexp.GoSEXP, 4)
+	sexpSlice3[0] = rsexp.String2sexp(outSched.Team)
+	sexpSlice3[1] = rsexp.String2sexp(outSched.Opponent)
+	sexpSlice3[2] = rsexp.Int2sexp(outSched.IsHome)
+	sexpSlice3[3] = rsexp.Int2sexp(outSched.HasHappened)
 
 	// the last element is a string with the timestamp
 	t := time.Now()
 	timeStampString := t.Format("3:04:05 PM MST, Monday Jan 2, 2006")
-	sexpSlice[18] = rsexp.String2sexp([]string{timeStampString})
+	dateSEXP := rsexp.String2sexp([]string{timeStampString})
 
-	list := rsexp.NewList(sexpSlice...)
-	outSEXP := rsexp.List2sexp(list)
+	list1 := rsexp.List2sexp(rsexp.NewList(sexpSlice1...))
+	list2 := rsexp.List2sexp(rsexp.NewList(sexpSlice2...))
+	list3 := rsexp.List2sexp(rsexp.NewList(sexpSlice3...))
+
+	finalList := rsexp.NewList(list1, list2, list3, dateSEXP)
+	outSEXP := rsexp.List2sexp(finalList)
 
 	return *(*C.SEXP)(outSEXP.Point)
 }
 
 // Everything in this function should be commented out when building the shared library
 func main() {
-	/*games, err := fte.GetSPILatest()
+	/*games, table, err := fte.GetSPILatest()
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println(games)*/
+	fmt.Println(len(games.Dates))
+	fmt.Println(table.SPI)*/
 }

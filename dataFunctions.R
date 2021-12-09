@@ -1,6 +1,6 @@
 # This file contains functions related to the data tables used in the Dons By The Numbers app
 
-UpdateFiveThirtyEight <- function(tableFilename, timestampFilename) {
+UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, leagueSchedFilename, timestampFilename) {
 	# load the shared library if needed
 	if (!is.loaded("UpdateFiveThirtyEight")) {
 		dyn.load("getFTE.so")
@@ -11,36 +11,58 @@ UpdateFiveThirtyEight <- function(tableFilename, timestampFilename) {
 		stop(paste("UpdateFiveThirtyEight encountered error:", res[[1]]))
 	}
 	
+	wimbledonGames = res[[1]]
+	leagueTable = res[[2]]
+	leagueSchedule = res[[3]]
+	fteUpdateTimestamp = res[[4]]
+	
 	# Create a data.table from the results
-	table538 = data.table(date          = res[[1]],
-												opponent      = res[[2]],
-												home          = as.logical(res[[3]]),
-												wimbledonSPI  = res[[4]],
-												opponentSPI   = res[[5]],
-												winProb       = res[[6]],
-												lossProb      = res[[7]],
-												tieProb       = res[[8]],
-												projPoints    = res[[9]],
-												pgFor         = res[[10]],
-												pgOpp         = res[[11]],
-												importance    = res[[12]],
-												gFor          = res[[13]],
-												gOpp          = res[[14]],
-												points        = res[[15]],
-												cumProjPoints = res[[16]],
-												cumPoints     = res[[17]],
-												goalDiff      = res[[18]]
+	table538 = data.table(date          = wimbledonGames[[1]],
+												opponent      = wimbledonGames[[2]],
+												home          = as.logical(wimbledonGames[[3]]),
+												wimbledonSPI  = wimbledonGames[[4]],
+												opponentSPI   = wimbledonGames[[5]],
+												winProb       = wimbledonGames[[6]],
+												lossProb      = wimbledonGames[[7]],
+												tieProb       = wimbledonGames[[8]],
+												projPoints    = wimbledonGames[[9]],
+												pgFor         = wimbledonGames[[10]],
+												pgOpp         = wimbledonGames[[11]],
+												importance    = wimbledonGames[[12]],
+												gFor          = wimbledonGames[[13]],
+												gOpp          = wimbledonGames[[14]],
+												points        = wimbledonGames[[15]],
+												cumProjPoints = wimbledonGames[[16]],
+												cumPoints     = wimbledonGames[[17]],
+												goalDiff      = wimbledonGames[[18]]
 	)
 	
-	# Grab the timestamp as the last element
-	fteUpdateTimestamp = res[[19]]
+	# Create the league table
+	leagueTable = data.table(team            = leagueTable[[1]],
+													 matchesPlayed   = leagueTable[[2]],
+													 points          = leagueTable[[3]],
+													 goalDiff        = leagueTable[[4]],
+													 pointPercentage = round(leagueTable[[5]], 2),
+													 goalPercentage  = round(leagueTable[[6]], 2),
+													 spi             = leagueTable[[7]]
+	 )
+	leagueTable[,strength := round((pointPercentage + goalPercentage + 2*spi) / 3, 2)]
+	setorderv(leagueTable, cols=c("points","matchesPlayed","goalDiff"), order=c(-1,1,-1))
 	
+	leagueSchedule = data.table(team        = leagueSchedule[[1]],
+															opponent    = leagueSchedule[[2]],
+															isHome      = leagueSchedule[[3]],
+															hasHappened = leagueSchedule[[4]]
+	)
+
 	# write the table538 to an Rdata file
 	save(table538, file=tableFilename)
+	save(leagueTable, file=leagueTableFilename)
+	save(leagueSchedule, file=leagueSchedFilename)
 	save(fteUpdateTimestamp, file=timestampFilename)
 	
 	# return the table as well
-	return(table538)
+	return(list(table538, leagueTable, leagueSchedule))
 }
 
 xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
@@ -77,7 +99,7 @@ xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
 }
 
 # naTolAvg calculates the average of a list of values, tolerating and ignoring NAs
-# Normally, using mean(values, na.rm=TRUE) would suffice, but data.table interpets this to mean 
+# Normally, using mean(values, na.rm=TRUE) would suffice, but data.table interprets this to mean 
 # the entire column and put that in every cell when using `:=`, which we don't want. A quick 
 # google didn't turn up an elegant solution, so we're writing an inefficient but simple to implement solution
 naTolAvg <- function(value1, value2) {
@@ -173,4 +195,22 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,adjCumXGPoints := cumsum(adjXGPoints)]
 	
 	return(mergeTable)
+}
+
+AddScheduleStrength <- function(leagueTable, leagueSchedule) {
+	leagueSchedule = merge(leagueSchedule, leagueTable[,c("team","strength")], by.x="opponent", by.y="team")
+	# Adjust the opponent strength up for away games
+	leagueSchedule[isHome == 0,adjStrength := strength * 1.15]
+	# and adjust the opponent strength down for home games
+	leagueSchedule[isHome == 1,adjStrength := strength * 0.85]
+	
+	strengthPlayed = leagueSchedule[hasHappened == 1,.(strengthPlayed = round(mean(adjStrength), 2)), by="team"]
+	strengthToCome = leagueSchedule[hasHappened == 0,.(strengthToCome = round(mean(adjStrength), 2)), by="team"]
+	
+	strengthTable = merge(strengthPlayed, strengthToCome, by="team")
+	
+	leagueTable = merge(leagueTable, strengthTable, by="team")
+	setorderv(leagueTable, cols=c("points","matchesPlayed","goalDiff"), order=c(-1,1,-1))
+	
+	return(leagueTable)
 }
