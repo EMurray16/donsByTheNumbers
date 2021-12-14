@@ -419,6 +419,7 @@ makeLeagueTable <- function(leagueTable) {
 						 						"Played","To Come")) %>% # strength of schedule
 		kable_styling(bootstrap_options = c("striped","hover","condensed","responsive"), fixed_thead=TRUE, full_width=FALSE) %>%
 		row_spec(which(leagueTable$team == "AFC Wimbledon"), bold=T) %>%
+		row_spec(c(6,20), extra_css = "border-bottom: 1px solid") %>%
 		add_header_above(c(" "=5, "Team Quality"=4, "Strength of Schedule"=2))
 
 	return(k1)

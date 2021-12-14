@@ -17,18 +17,17 @@ date,opponent,xgFor_footballxg,xgOpp_footballxg,xgFor_footystats,xgOpp_footystat
 2021-11-20,Portsmouth,1.7,2.1,1.42,1.88,45,47.8,5,18,26,2
 2021-11-23,Crewe Alexandra,4.4,1.5,2.75,1.24,50,68.4,0,45,21,3
 2021-11-27,Fleetwood Town,1,1.3,1.09,1.51,47,40.9,7,5,20,2
-2021-12-07,Accrington Stanley,,,,,42,42.3,0,34,12,3
-2021-12-11,Wycombe Wanderers,,,,,,,,,,
+2021-12-07,Accrington Stanley,1,2.6,1.2,1.69,42,40,0,34,12,3
+2021-12-11,Wycombe Wanderers,1.8,2.6,1.63,2.44,52,41.7,0,30,9,3
 2021-12-18,Portsmouth,,,,,,,,,,
 2021-12-26,Charlton Athletic,,,,,,,,,,
 2021-12-29,Oxford United,,,,,,,,,,
 2022-01-01,Plymouth Argyle,,,,,,,,,,
-2022-01-08,Ipswich Town,,,,,,,,,,
 2022-01-11,Milton Keynes Dons,,,,,,,,,,
 2022-01-15,Morecambe,,,,,,,,,,
 2022-01-22,Burton Albion,,,,,,,,,,
+2022-01-25,Ipswich Town,,,,,,,,,,
 2022-01-29,Shrewsbury Town,,,,,,,,,,
-2022-02-01,Cheltenham Town,,,,,,,,,,
 2022-02-05,Charlton Athletic,,,,,,,,,,
 2022-02-08,Rotherham United,,,,,,,,,,
 2022-02-12,Sunderland,,,,,,,,,,
@@ -45,3 +44,4 @@ date,opponent,xgFor_footballxg,xgOpp_footballxg,xgFor_footystats,xgOpp_footystat
 2022-04-18,Wycombe Wanderers,,,,,,,,,,
 2022-04-23,Fleetwood Town,,,,,,,,,,
 2022-04-30,Accrington Stanley,,,,,,,,,,
+2022-05-01,Cheltenham Town,,,,,,,,,,
