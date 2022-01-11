@@ -10,56 +10,27 @@ UpdateFiveThirtyEight <- function(tableFilename, leagueTableFilename, leagueSche
 	if (length(res) == 1) {
 		stop(paste("UpdateFiveThirtyEight encountered error:", res[[1]]))
 	}
-	
-	wimbledonGames = res[[1]]
-	leagueTable = res[[2]]
-	leagueSchedule = res[[3]]
-	fteUpdateTimestamp = res[[4]]
-	
+
 	# Create a data.table from the results
-	table538 = data.table(date          = wimbledonGames[[1]],
-												opponent      = wimbledonGames[[2]],
-												home          = as.logical(wimbledonGames[[3]]),
-												wimbledonSPI  = wimbledonGames[[4]],
-												opponentSPI   = wimbledonGames[[5]],
-												winProb       = wimbledonGames[[6]],
-												lossProb      = wimbledonGames[[7]],
-												tieProb       = wimbledonGames[[8]],
-												projPoints    = wimbledonGames[[9]],
-												pgFor         = wimbledonGames[[10]],
-												pgOpp         = wimbledonGames[[11]],
-												importance    = wimbledonGames[[12]],
-												gFor          = wimbledonGames[[13]],
-												gOpp          = wimbledonGames[[14]],
-												points        = wimbledonGames[[15]],
-												cumProjPoints = wimbledonGames[[16]],
-												cumPoints     = wimbledonGames[[17]],
-												goalDiff      = wimbledonGames[[18]]
-	)
+	table538 = data.table(res$wimbledonGames)
+	table538[,home := as.logical(home)]
 	
 	# Create the league table
-	leagueTable = data.table(team            = leagueTable[[1]],
-													 matchesPlayed   = leagueTable[[2]],
-													 points          = leagueTable[[3]],
-													 goalDiff        = leagueTable[[4]],
-													 pointPercentage = round(leagueTable[[5]], 2),
-													 goalPercentage  = round(leagueTable[[6]], 2),
-													 spi             = leagueTable[[7]]
-	 )
+	leagueTable = data.table(res$leagueTable)
+	leagueTable[,pointPercentage := round(pointPercentage, 2)]
+	leagueTable[,goalPercentage := round(goalPercentage, 2)]
 	leagueTable[,strength := round((pointPercentage + goalPercentage + 2*spi) / 3, 2)]
 	setorderv(leagueTable, cols=c("points","matchesPlayed","goalDiff"), order=c(-1,1,-1))
 	
-	leagueSchedule = data.table(team        = leagueSchedule[[1]],
-															opponent    = leagueSchedule[[2]],
-															isHome      = leagueSchedule[[3]],
-															hasHappened = leagueSchedule[[4]]
-	)
-
+	leagueSchedule = data.table(res$leagueSchedule)
+	
+	fteTime = res$fteUpdateTimestamp
+	
 	# write the table538 to an Rdata file
 	save(table538, file=tableFilename)
 	save(leagueTable, file=leagueTableFilename)
 	save(leagueSchedule, file=leagueSchedFilename)
-	save(fteUpdateTimestamp, file=timestampFilename)
+	save(fteTime, file=timestampFilename)
 	
 	# return the table as well
 	return(list(table538, leagueTable, leagueSchedule))
