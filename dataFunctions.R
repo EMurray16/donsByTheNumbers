@@ -102,21 +102,14 @@ xgOdds <- function(wimbledonXG, opponentXG, mode=c("win","loss","tie")) {
 # Normally, using mean(values, na.rm=TRUE) would suffice, but data.table interprets this to mean 
 # the entire column and put that in every cell when using `:=`, which we don't want. A quick 
 # google didn't turn up an elegant solution, so we're writing an inefficient but simple to implement solution
-naTolAvg <- function(value1, value2) {
-	if (length(value1) != length(value2)) {
+naTolAvg <- function(value1, value2, value3) {
+	if (length(value1) != length(value2) || length(value1) != length(value3)) {
 		stop("input vectors must be the same length")
 	}
 	outvec = vector(mode="double", length=length(value1))
 	
 	for (i in 1:length(value1)) {
-		if (is.na(value1[i])) {
-			# throw in some rounding for convenience
-			outvec[i] = round(value2[i], 4)
-		} else if (is.na(value2[i])) {
-			outvec[i] = round(value1[i], 4)
-		} else {
-			outvec[i] = round(0.5 * (value1[i]+value2[i]), 4)
-		}
+		outvec[i] = round(mean(c(value1[i], value2[i], value3[i]), na.rm=T), 4)
 	}
 	
 	return(outvec)
@@ -138,12 +131,15 @@ MergeTables <- function(table538, xgTable) {
 	
 	mergeTable[,gdae_footystats := (gFor - gOpp) - (xgFor_footystats - xgOpp_footystats)]
 	mergeTable[,gdae_footballxg := (gFor - gOpp) - (xgFor_footballxg - xgOpp_footballxg)]
+	mergeTable[,gdae_experimental361 := (gFor - gOpp) - (xgFor_experimental361 - xgOpp_experimental361)]
 	
 	# Calculate cumulative statistics
 	mergeTable[,cumXGFor_footystats := cumsum(xgFor_footystats)]
 	mergeTable[,cumXGOpp_footystats := cumsum(xgOpp_footystats)]
 	mergeTable[,cumXGFor_footballxg := cumsum(xgFor_footballxg)]
 	mergeTable[,cumXGOpp_footballxg := cumsum(xgOpp_footballxg)]
+	mergeTable[,cumXGFor_experimental361 := cumsum(xgFor_experimental361)]
+	mergeTable[,cumXGOpp_experimental361 := cumsum(xgOpp_experimental361)]
 	mergeTable[,cumGFor := cumsum(gFor)]
 	mergeTable[,cumGOpp := cumsum(gOpp)]
 	
@@ -154,10 +150,16 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,cumLuckOff_footballxg := cumGFor / cumXGFor_footballxg]
 	mergeTable[,cumLuckDef_footballxg := cumXGOpp_footballxg / cumGOpp]
 	mergeTable[,cumLuckCom_footballxg := 0.5 * (cumLuckOff_footballxg + cumLuckDef_footballxg)]
+	
+	mergeTable[,cumLuckOff_experimental361 := cumGFor / cumXGFor_experimental361]
+	mergeTable[,cumLuckDef_experimental361 := cumXGOpp_experimental361 / cumGOpp]
+	mergeTable[,cumLuckCom_experimental361 := 0.5 * (cumLuckOff_experimental361 + cumLuckDef_experimental361)]
+	
 	mergeTable[,cumPossess := round(cumsum(possessionFor) / seq_along(possessionFor), 1)]
 	mergeTable[,cumShotShare := round(cumsum(shotShare) / seq_along(shotShare), 1)]
 	mergeTable[,cumGDAE_footystats := cumsum(gdae_footystats)]
 	mergeTable[,cumGDAE_footballxg := cumsum(gdae_footballxg)]
+	mergeTable[,cumGDAE_experimental361 := cumsum(gdae_experimental361)]
 	
 	# Add a string for the game location
 	mergeTable$Location = as.character(mergeTable$home)
@@ -167,8 +169,12 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[,home := NULL]
 	
 	# "deserved xg"
-	mergeTable[,adjXGFor := naTolAvg(xgFor_footystats * 90 / (90 + timeTrailingSecondHalf), xgFor_footballxg * 90/(90+timeTrailingSecondHalf))]
-	mergeTable[,adjXGOpp := naTolAvg(xgOpp_footystats * 90 / (90 + timeLeadingSecondHalf), xgOpp_footballxg * 90/(90+timeLeadingSecondHalf))]
+	mergeTable[,adjXGFor := naTolAvg(xgFor_footystats * 90 / (90 + timeTrailingSecondHalf), 
+																	 xgFor_footballxg * 90/(90+timeTrailingSecondHalf),
+																	 xgFor_experimental361 * 90/(90+timeTrailingSecondHalf))]
+	mergeTable[,adjXGOpp := naTolAvg(xgOpp_footystats * 90 / (90 + timeLeadingSecondHalf), 
+																	 xgOpp_footballxg * 90/(90+timeLeadingSecondHalf),
+																	 xgOpp_experimental361 * 90/(90+timeLeadingSecondHalf))]
 	
 	# xg win probabilities
 	mergeTable[hasHappened == TRUE,xgW_footballxg := xgOdds(xgFor_footballxg, xgOpp_footballxg, "win")]
@@ -179,15 +185,20 @@ MergeTables <- function(table538, xgTable) {
 	mergeTable[hasHappened == TRUE,xgL_footystats := xgOdds(xgFor_footystats, xgOpp_footystats, "loss")]
 	mergeTable[hasHappened == TRUE,xgT_footystats := xgOdds(xgFor_footystats, xgOpp_footystats, "tie")]
 	
+	mergeTable[hasHappened == TRUE,xgW_experimental361 := xgOdds(xgFor_experimental361, xgOpp_experimental361, "win")]
+	mergeTable[hasHappened == TRUE,xgL_experimental361 := xgOdds(xgFor_experimental361, xgOpp_experimental361, "loss")]
+	mergeTable[hasHappened == TRUE,xgT_experimental361 := xgOdds(xgFor_experimental361, xgOpp_experimental361, "tie")]
+	
 	mergeTable[hasHappened == TRUE,adjXGWin := xgOdds(adjXGFor, adjXGOpp, "win")]
 	mergeTable[hasHappened == TRUE,adjXGLoss := xgOdds(adjXGFor, adjXGOpp, "loss")]
 	mergeTable[hasHappened == TRUE,adjXGTie := xgOdds(adjXGFor, adjXGOpp, "tie")]
 	
-	
-	mergeTable[hasHappened == TRUE, xgWin := naTolAvg(xgW_footballxg, xgW_footystats)]
-	mergeTable[hasHappened == TRUE, xgLoss := naTolAvg(xgL_footballxg, xgL_footystats)]
-	mergeTable[hasHappened == TRUE, xgTie := naTolAvg(xgT_footballxg, xgT_footystats)]
-	mergeTable[,c("xgW_footballxg","xgL_footballxg","xgT_footballxg","xgW_footystats","xgL_footystats","xgT_footystats") := NULL]
+	mergeTable[hasHappened == TRUE, xgWin := naTolAvg(xgW_footballxg, xgW_footystats, xgW_experimental361)]
+	mergeTable[hasHappened == TRUE, xgLoss := naTolAvg(xgL_footballxg, xgL_footystats, xgL_experimental361)]
+	mergeTable[hasHappened == TRUE, xgTie := naTolAvg(xgT_footballxg, xgT_footystats, xgT_experimental361)]
+	mergeTable[,c("xgW_footballxg","xgL_footballxg","xgT_footballxg",
+								"xgW_footystats","xgL_footystats","xgT_footystats",
+								"xgW_experimental361","xgL_experimental361","xgT_experimental361") := NULL]
 	
 	mergeTable[,xgPoints := xgWin * 3 + xgTie]
 	mergeTable[,cumXGPoints := cumsum(xgPoints)]

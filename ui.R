@@ -57,10 +57,10 @@ navbarPage(title="Dons By the Numbers", id="navbarID",
 						 								withMathJax(includeMarkdown("docs/aboutXG.md"))
 						 ),
 						 mainPanel(width=12,
-						 		girafeOutput("plotXG_1"),
-						 		girafeOutput("plotXG_2"),
-						 		girafeOutput("plotXG_3"),
-						 		girafeOutput("plotXG_4")
+						 					girafeOutput("plotXG_2"),
+						 					girafeOutput("plotXG_1"),
+						 					girafeOutput("plotXG_3"),
+						 					girafeOutput("plotXG_4")
 						 )
 	  ),
 		

@@ -109,7 +109,13 @@ makeXGPlots <- function(mergeTable) {
 					 new=c("xgFor","xgOpp","GDAE","cumGDAE"))
 	footballxgTable[,Model := "footballxg.com"]
 	
-	xgPlotTable = rbind(footystatsTable, footballxgTable)
+	experimental361Table = mergeTable[hasHappened == TRUE,
+															 c("gameDesc","date","gFor","gOpp","xgFor_experimental361","xgOpp_experimental361","gdae_experimental361","cumGDAE_experimental361")]
+	setnames(experimental361Table, old=c("xgFor_experimental361","xgOpp_experimental361","gdae_experimental361","cumGDAE_experimental361"), 
+					 new=c("xgFor","xgOpp","GDAE","cumGDAE"))
+	experimental361Table[,Model := "experimental361.com"]
+	
+	xgPlotTable = rbind(footystatsTable, footballxgTable, experimental361Table)
 	
 	footystatsTable2 = mergeTable[hasHappened == TRUE,
 																c("gameDesc","date","cumLuckOff_footystats","cumLuckDef_footystats","cumLuckCom_footystats")]
@@ -123,7 +129,13 @@ makeXGPlots <- function(mergeTable) {
 					 new=c("luckOff","luckDef","luckComb"))
 	footballxgTable2[,Model := "footballxg.com"]
 	
-	luckPlotTable = rbind(footystatsTable2, footballxgTable2)
+	experimental361Table2 = mergeTable[hasHappened == TRUE,
+																c("gameDesc","date","cumLuckOff_experimental361","cumLuckDef_experimental361","cumLuckCom_experimental361")]
+	setnames(experimental361Table2, old=c("cumLuckOff_experimental361","cumLuckDef_experimental361","cumLuckCom_experimental361"), 
+					 new=c("luckOff","luckDef","luckComb"))
+	experimental361Table2[,Model := "experimental361.com"]
+	
+	luckPlotTable = rbind(footystatsTable2, footballxgTable2, experimental361Table2)
 	
 	g1 = ggplot(xgPlotTable, aes(x=date)) + baseTheme() +
 		geom_hline(yintercept=0) +
