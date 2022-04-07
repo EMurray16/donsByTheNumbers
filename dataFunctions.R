@@ -175,8 +175,11 @@ AddScheduleStrength <- function(leagueTable, leagueSchedule) {
 	# and adjust the opponent strength down for home games
 	leagueSchedule[isHome == 1,adjStrength := strength * 0.85]
 	
-	strengthPlayed = leagueSchedule[hasHappened == 1,.(strengthPlayed = round(mean(adjStrength), 2)), by="team"]
-	strengthToCome = leagueSchedule[hasHappened == 0,.(strengthToCome = round(mean(adjStrength), 2)), by="team"]
+	# Make sure the strength of schedule is between 40 and 50
+	strengthPlayed = leagueSchedule[hasHappened == 1,.(strengthPlayed = min(round(mean(adjStrength), 2), 50)), by="team"]
+	strengthToCome = leagueSchedule[hasHappened == 0,.(strengthToCome = min(round(mean(adjStrength), 2), 50)), by="team"]
+	strengthPlayed[strengthPlayed < 40,strengthPlayed := 40]
+	strengthToCome[strengthToCome < 40,strengthToCome := 40]
 	
 	strengthTable = merge(strengthPlayed, strengthToCome, by="team")
 	
